@@ -1,5 +1,8 @@
 # comptime
 
+> [!NOTE]
+> This repo was originally forked from [comptime](https://github.com/lukeed/comptime)
+
 > A Zig-inspired build-time evaluation primitive, exposed as Vite and Rolldown plugins.
 
 ```ts
@@ -124,7 +127,3 @@ comptime(() => {
 ## Limits
 
 This package does not add browser-side evaluation, disk caching, Webpack support, or esbuild standalone support.
-
-## License
-
-MIT © [Luke Edwards](https://lukeed.com)
