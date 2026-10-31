@@ -16,7 +16,7 @@ This HTML was rendered by **md4x** inside \`comptime()\`.
 `;
 
 const html = comptime(async () => {
-  let { renderToHtml } = await import("md4x/napi");
+  const { renderToHtml } = await import("md4x/napi");
   return renderToHtml(markdown);
 });
 

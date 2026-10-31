@@ -1,0 +1,16 @@
+{
+  "name": "comptime-vs-better-comptime",
+  "type": "module",
+  "scripts": {
+    "gen": "bun run gen.ts"
+  },
+  "dependencies": {
+    "better-comptime": "0.1.2",
+    "comptime": "0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "8.0.0",
+    "vitest": "^5.0.5"
+  }
+}

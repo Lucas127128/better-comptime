@@ -4,7 +4,7 @@ const html = comptime(async () => {
   const { render } = await import("preact-render-to-string");
   const { Article } = await import("./Article");
 
-  let details = [
+  const details = [
     { label: "renderer", value: "preact-render-to-string" },
     { label: "component", value: "Article.tsx" },
     { label: "timing", value: "inside comptime()" },

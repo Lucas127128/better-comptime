@@ -46,7 +46,7 @@ export function comptime(options?: Options): Plugin {
         const result = await core.transform(code, id, {
           addWatchFile: this.addWatchFile.bind(this),
           resolve: async (source, importer) => {
-            let resolved = await this.resolve(source, importer);
+            const resolved = await this.resolve(source, importer);
             if (!resolved || resolved.external) return null;
             return resolved.id;
           },

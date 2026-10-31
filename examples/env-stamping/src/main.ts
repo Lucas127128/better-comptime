@@ -7,7 +7,7 @@ type Stamp = {
 };
 
 const stamp = comptime<Stamp>(() => {
-  let channel = process.env.COMPTIME_CHANNEL ?? "local";
+  const channel = process.env.COMPTIME_CHANNEL ?? "local";
   if (channel.trim() === "") {
     throw new Error("COMPTIME_CHANNEL cannot be empty");
   }

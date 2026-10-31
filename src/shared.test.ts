@@ -18,7 +18,7 @@ function createCoreWithEvaluator(
   let core: ComptimeCore | undefined;
   const evaluator: Evaluator = {
     async evaluate(virtualId) {
-      let body = core?.load(virtualId);
+      const body = core?.load(virtualId);
       if (body !== undefined && body !== null) {
         bodies.push(body);
       }

@@ -7,10 +7,10 @@ type Payload = {
 };
 
 const payload = comptime<Payload>(async () => {
-  let response = await fetch(
+  const response = await fetch(
     "data:application/json,%7B%22source%22%3A%22data-url%22%2C%22values%22%3A%5B3%2C5%2C8%2C13%5D%7D",
   );
-  let value: unknown = await response.json();
+  const value: unknown = await response.json();
   return readPayload(value);
 
   function readPayload(input: unknown): Payload {
@@ -18,7 +18,7 @@ const payload = comptime<Payload>(async () => {
       throw new Error("Unexpected payload shape");
     }
 
-    let values = input.values.filter((item) => typeof item === "number");
+    const values = input.values.filter((item) => typeof item === "number");
     return {
       source: input.source,
       values,

@@ -19,7 +19,8 @@
   },
   "repository": "Lucas127128/better-comptime",
   "workspaces": [
-    "examples/*"
+    "examples/*",
+    "benchmarks/*"
   ],
   "files": [
     "dist"
