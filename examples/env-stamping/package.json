@@ -10,7 +10,7 @@
     "rd:build": "rolldown -c"
   },
   "devDependencies": {
-    "comptime": "file:../..",
+    "better-comptime": "file:../..",
     "rolldown": "^1.0.0",
     "vite": "^8.0.0"
   }

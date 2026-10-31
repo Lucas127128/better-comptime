@@ -1,4 +1,4 @@
-import { comptime } from "comptime";
+import { comptime } from "better-comptime";
 
 type Payload = {
   source: string;

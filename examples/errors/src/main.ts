@@ -1,4 +1,4 @@
-import { comptime } from "comptime";
+import { comptime } from "better-comptime";
 
 let message = comptime<string>(() => readReleaseManifest());
 

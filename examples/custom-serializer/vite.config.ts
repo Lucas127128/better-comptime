@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import { comptime } from "comptime/vite";
+import { comptime } from "better-comptime/vite";
 
 export default defineConfig({
   build: {

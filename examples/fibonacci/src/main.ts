@@ -1,4 +1,4 @@
-import { comptime } from "comptime";
+import { comptime } from "better-comptime";
 import { fibonacci } from "./math";
 
 let input = 12;

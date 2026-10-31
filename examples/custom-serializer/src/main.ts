@@ -1,4 +1,4 @@
-import { comptime } from "comptime";
+import { comptime } from "better-comptime";
 
 let assetUrl = comptime(() => new URL("/manual?chapter=serializers", "https://example.com"));
 let target = document.querySelector("#asset");

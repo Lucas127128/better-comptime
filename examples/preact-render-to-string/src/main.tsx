@@ -1,4 +1,4 @@
-import { comptime } from "comptime";
+import { comptime } from "better-comptime";
 
 let html = comptime(async () => {
   const { render } = await import("preact-render-to-string");

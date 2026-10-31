@@ -1,5 +1,5 @@
 import { defineConfig } from "rolldown";
-import { comptime } from "comptime/rolldown";
+import { comptime } from "better-comptime/rolldown";
 
 export default defineConfig({
   input: "src/main.ts",

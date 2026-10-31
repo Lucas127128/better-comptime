@@ -6,7 +6,7 @@ import MagicString, { type SourceMap } from "magic-string";
 import { parseSync } from "rolldown/utils";
 
 const DEFAULT_TIMEOUT = 10_000;
-const PACKAGE_NAME = "comptime";
+const PACKAGE_NAME = "better-comptime";
 const RUNTIME_ERROR = "comptime() must be replaced by the Vite or Rolldown plugin before runtime";
 const RUNTIME_VIRTUAL_ID = "\0comptime:runtime";
 const RUNTIME_VIRTUAL_MODULE = `export function comptime() { throw new Error(${JSON.stringify(RUNTIME_ERROR)}); }\n`;
