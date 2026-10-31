@@ -1,6 +1,6 @@
 {
   "name": "better-comptime",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A Zig-inspired build-time evaluation primitive, exposed as Vite and Rolldown plugins.",
   "keywords": [
     "build-time",
@@ -17,7 +17,7 @@
     "name": "Lucas Leung",
     "email": "kayauleung2024@gmail.com"
   },
-  "repository": "Lucas127128/comptime",
+  "repository": "Lucas127128/better-comptime",
   "workspaces": [
     "examples/*"
   ],
