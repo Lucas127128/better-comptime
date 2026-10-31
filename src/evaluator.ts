@@ -96,7 +96,9 @@ export class ModuleRunnerEvaluator implements Evaluator {
   }
 
   async dispose(): Promise<void> {
-    this.#runner.isClosed() || (await this.#runner.close());
+    if (!this.#runner.isClosed()) {
+      await this.#runner.close();
+    }
   }
 
   async #handleInvoke(payload: unknown): Promise<unknown> {

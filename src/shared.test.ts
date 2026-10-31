@@ -40,7 +40,7 @@ describe.concurrent("shared transform core", () => {
     let bodies: string[] = [];
     let core = createCoreWithEvaluator(3, bodies);
     let result = await core.transform(
-      'import { comptime } from "comptime";\nlet value = comptime(() => 1 + 2);\n',
+      'import { comptime } from "better-comptime";\nlet value = comptime(() => 1 + 2);\n',
       "/project/src/app.ts",
     );
 
@@ -66,7 +66,7 @@ describe.concurrent("shared transform core", () => {
     let core = createCoreWithEvaluator(8, bodies);
     let result = await core.transform(
       [
-        'import { comptime as ct } from "comptime";',
+        'import { comptime as ct } from "better-comptime";',
         "function demo(ct: (fn: () => number) => number) {",
         "  return ct(() => 1);",
         "}",
@@ -85,7 +85,7 @@ describe.concurrent("shared transform core", () => {
     let core = createCoreWithEvaluator(55, bodies);
     await core.transform(
       [
-        'import { comptime } from "comptime";',
+        'import { comptime } from "better-comptime";',
         'import { fib } from "./math";',
         'import { unused } from "./unused";',
         "let value = comptime(() => fib(10));",
@@ -102,7 +102,7 @@ describe.concurrent("shared transform core", () => {
     let core = createCoreWithEvaluator(12, bodies);
     await core.transform(
       [
-        'import { comptime } from "comptime";',
+        'import { comptime } from "better-comptime";',
         "let factor = 3;",
         "function mul(value: number) { return value * factor; }",
         "let result = comptime(() => mul(4));",
@@ -120,7 +120,7 @@ describe.concurrent("shared transform core", () => {
 
     try {
       await core.transform(
-        'import { comptime } from "comptime";\nlet value = comptime(1);\n',
+        'import { comptime } from "better-comptime";\nlet value = comptime(1);\n',
         "/project/src/app.ts",
       );
     } catch (error) {
@@ -141,7 +141,7 @@ describe.concurrent("shared transform core", () => {
 
     try {
       await core.transform(
-        'import { comptime } from "comptime";\nlet value = comptime(() => () => 1);\n',
+        'import { comptime } from "better-comptime";\nlet value = comptime(() => () => 1);\n',
         "/project/src/app.ts",
       );
     } catch (error) {
@@ -173,7 +173,7 @@ describe.concurrent("shared transform core", () => {
 
     try {
       await core.transform(
-        'import { comptime } from "comptime";\nlet value = comptime(() => runFixture());\n',
+        'import { comptime } from "better-comptime";\nlet value = comptime(() => runFixture());\n',
         "/project/src/app.ts",
       );
     } catch (error) {
@@ -202,7 +202,7 @@ describe.concurrent("shared transform core", () => {
     };
     let core = createCoreWithEvaluator(new AssetRef("/docs"), [], { serializers: [serializer] });
     let result = await core.transform(
-      'import { comptime } from "comptime";\nlet value = comptime(() => new URL("https://example.com/docs"));\n',
+      'import { comptime } from "better-comptime";\nlet value = comptime(() => new URL("https://example.com/docs"));\n',
       "/project/src/app.ts",
     );
 
@@ -224,7 +224,7 @@ describe.concurrent("shared transform core", () => {
 
     try {
       await core.transform(
-        'import { comptime } from "comptime";\nlet value = comptime(() => 1);\n',
+        'import { comptime } from "better-comptime";\nlet value = comptime(() => 1);\n',
         "/project/src/app.ts",
       );
     } catch (error) {
@@ -248,7 +248,7 @@ describe.concurrent("shared transform core", () => {
     };
     let core = createCore({ getEvaluator: () => evaluator });
     let code =
-      'import { comptime } from "comptime";\nlet value = comptime(() => process.env.BUILD_ID);\n';
+      'import { comptime } from "better-comptime";\nlet value = comptime(() => process.env.BUILD_ID);\n';
     process.env.BUILD_ID = "one";
     let first = await core.transform(code, "/project/src/app.ts");
     let second = await core.transform(code, "/project/src/app.ts");

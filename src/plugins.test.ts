@@ -132,7 +132,7 @@ describe.concurrent("plugin adapters", () => {
 
   test("vite dev reevaluates when dynamic comptime imports change", async () => {
     let root = createFixture("vite-dev-dynamic-import-update");
-    let entry = writeDynamicDependencyFixture(root, "one");
+    writeDynamicDependencyFixture(root, "one");
     let dependency = resolve(root, "src/article.ts");
     let server = await createServer({
       root,
@@ -413,7 +413,7 @@ function writeFixture(root: string): string {
   writeFileSync(
     entry,
     [
-      'import { comptime } from "comptime";',
+      'import { comptime } from "better-comptime";',
       'import { fib } from "./math";',
       "export let value = comptime(() => fib(10));",
     ].join("\n"),
@@ -430,7 +430,7 @@ function writeVariableFixture(root: string, input: number): string {
   writeFileSync(
     entry,
     [
-      'import { comptime } from "comptime";',
+      'import { comptime } from "better-comptime";',
       'import { fib } from "./math";',
       `let input = ${input};`,
       "let value = comptime(() => fib(input));",
@@ -457,7 +457,7 @@ function writeDynamicImportFixture(root: string): string {
   writeFileSync(
     entry,
     [
-      'import { comptime } from "comptime";',
+      'import { comptime } from "better-comptime";',
       "export let value = comptime(async () => {",
       '  let mod = await import("dynamic-comptime-value");',
       "  return mod.value;",
@@ -476,7 +476,7 @@ function writeDynamicRelativeImportFixture(root: string): string {
   writeFileSync(
     entry,
     [
-      'import { comptime } from "comptime";',
+      'import { comptime } from "better-comptime";',
       "export let value = comptime(async () => {",
       '  let mod = await import("./value");',
       "  return mod.value;",
@@ -495,7 +495,7 @@ function writeDynamicDependencyFixture(root: string, value: string): string {
   writeFileSync(
     entry,
     [
-      'import { comptime } from "comptime";',
+      'import { comptime } from "better-comptime";',
       "export let html = comptime(async () => {",
       '  let { renderArticle } = await import("./article");',
       "  return renderArticle();",
@@ -539,7 +539,7 @@ function writeDynamicNamedImportFixture(root: string): string {
   writeFileSync(
     entry,
     [
-      'import { comptime } from "comptime";',
+      'import { comptime } from "better-comptime";',
       "export let value = comptime(async () => {",
       '  let { render } = await import("named-render-package");',
       "  return render();",
@@ -587,7 +587,7 @@ function writeTsxBodyFixture(root: string): string {
   writeFileSync(
     entry,
     [
-      'import { comptime } from "comptime";',
+      'import { comptime } from "better-comptime";',
       "export let value = comptime(() => {",
       '  let status = "ready";',
       "  return <span>{status}</span>;",
@@ -602,7 +602,7 @@ function writeAsyncFixture(root: string): string {
   writeFileSync(
     entry,
     [
-      'import { comptime } from "comptime";',
+      'import { comptime } from "better-comptime";',
       "export let value = comptime(async () => {",
       "  return 55;",
       "});",
@@ -616,7 +616,7 @@ function writeTypedAsyncFixture(root: string): string {
   writeFileSync(
     entry,
     [
-      'import { comptime } from "comptime";',
+      'import { comptime } from "better-comptime";',
       "type Payload = { value: string };",
       "export let value = comptime(async () => {",
       '  let payload: Payload = { value: "ok" };',
@@ -632,7 +632,7 @@ function writeThrowingFixture(root: string): string {
   writeFileSync(
     entry,
     [
-      'import { comptime } from "comptime";',
+      'import { comptime } from "better-comptime";',
       "export let value = comptime(() => readFixtureManifest());",
       "function readFixtureManifest(): string {",
       '  throw new Error("fixture manifest missing");',
