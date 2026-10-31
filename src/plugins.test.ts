@@ -50,7 +50,9 @@ describe.concurrent("plugin adapters", () => {
     });
     const output = await bundle.generate({ format: "esm" });
     await bundle.close();
-    const code = output.output.map((chunk) => (chunk.type === "chunk" ? chunk.code : "")).join("\n");
+    const code = output.output
+      .map((chunk) => (chunk.type === "chunk" ? chunk.code : ""))
+      .join("\n");
 
     expect(code).toContain("55");
     expect(code).not.toContain("comptime(");
@@ -251,7 +253,9 @@ describe.concurrent("plugin adapters", () => {
     });
     const output = await bundle.generate({ format: "esm" });
     await bundle.close();
-    const code = output.output.map((chunk) => (chunk.type === "chunk" ? chunk.code : "")).join("\n");
+    const code = output.output
+      .map((chunk) => (chunk.type === "chunk" ? chunk.code : ""))
+      .join("\n");
 
     expect(code).toContain("55");
     expect(code).not.toContain("dynamic-comptime-value");
@@ -267,7 +271,9 @@ describe.concurrent("plugin adapters", () => {
     });
     const output = await bundle.generate({ format: "esm" });
     await bundle.close();
-    const code = output.output.map((chunk) => (chunk.type === "chunk" ? chunk.code : "")).join("\n");
+    const code = output.output
+      .map((chunk) => (chunk.type === "chunk" ? chunk.code : ""))
+      .join("\n");
 
     expect(code).toContain("55");
     expect(code).not.toContain("dynamic-relative-value");
@@ -283,7 +289,9 @@ describe.concurrent("plugin adapters", () => {
     });
     const output = await bundle.generate({ format: "esm" });
     await bundle.close();
-    const code = output.output.map((chunk) => (chunk.type === "chunk" ? chunk.code : "")).join("\n");
+    const code = output.output
+      .map((chunk) => (chunk.type === "chunk" ? chunk.code : ""))
+      .join("\n");
 
     expect(code).toContain("55");
     expect(code).not.toContain("named-render-package");
@@ -299,7 +307,9 @@ describe.concurrent("plugin adapters", () => {
     });
     const output = await bundle.generate({ format: "esm" });
     await bundle.close();
-    const code = output.output.map((chunk) => (chunk.type === "chunk" ? chunk.code : "")).join("\n");
+    const code = output.output
+      .map((chunk) => (chunk.type === "chunk" ? chunk.code : ""))
+      .join("\n");
 
     expect(code).toContain("<span>ready</span>");
     expect(code).not.toContain("fixture-jsx");

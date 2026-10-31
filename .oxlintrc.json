@@ -11,6 +11,6 @@
     "prefer-const": "error"
   },
   "env": {
-    "builtin": true,
-  },
+    "builtin": true
+  }
 }
