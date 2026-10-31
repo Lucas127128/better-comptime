@@ -11,7 +11,7 @@ import { comptime as viteComptime } from "./vite";
 import type { Serializer as RolldownSerializer } from "./rolldown";
 import type { Serializer as ViteSerializer } from "./vite";
 
-let viteSerializer: ViteSerializer = {
+const viteSerializer: ViteSerializer = {
   test(value) {
     return value instanceof URL;
   },
@@ -23,7 +23,7 @@ let viteSerializer: ViteSerializer = {
   },
 };
 
-let rolldownSerializer: RolldownSerializer = viteSerializer;
+const rolldownSerializer: RolldownSerializer = viteSerializer;
 
 describe.concurrent("plugin adapters", () => {
   test("plugin entrypoints export serializer types", () => {
@@ -34,7 +34,7 @@ describe.concurrent("plugin adapters", () => {
   });
 
   test("evaluator uses rolldown module runner transform", () => {
-    let source = readFileSync(resolve(import.meta.dir, "evaluator.ts"), "utf8");
+    const source = readFileSync(resolve(import.meta.dir, "evaluator.ts"), "utf8");
 
     expect(source).toContain('from "rolldown/experimental"');
     expect(source).toContain("moduleRunnerTransform");
@@ -42,24 +42,24 @@ describe.concurrent("plugin adapters", () => {
   });
 
   test("rolldown build replaces comptime calls", async () => {
-    let root = createFixture("rolldown");
-    let entry = writeFixture(root);
-    let bundle = await rolldown({
+    const root = createFixture("rolldown");
+    const entry = writeFixture(root);
+    const bundle = await rolldown({
       input: entry,
       plugins: [rolldownComptime()],
     });
-    let output = await bundle.generate({ format: "esm" });
+    const output = await bundle.generate({ format: "esm" });
     await bundle.close();
-    let code = output.output.map((chunk) => (chunk.type === "chunk" ? chunk.code : "")).join("\n");
+    const code = output.output.map((chunk) => (chunk.type === "chunk" ? chunk.code : "")).join("\n");
 
     expect(code).toContain("55");
     expect(code).not.toContain("comptime(");
   });
 
   test("vite build replaces comptime calls", async () => {
-    let root = createFixture("vite");
-    let entry = writeFixture(root);
-    let output = await build({
+    const root = createFixture("vite");
+    const entry = writeFixture(root);
+    const output = await build({
       root,
       logLevel: "silent",
       plugins: [viteComptime()],
@@ -73,16 +73,16 @@ describe.concurrent("plugin adapters", () => {
         write: false,
       },
     });
-    let code = collectCode(output);
+    const code = collectCode(output);
 
     expect(code).toContain("55");
     expect(code).not.toContain("comptime(");
   });
 
   test("vite dev reevaluates changed virtual modules", async () => {
-    let root = createFixture("vite-dev");
-    let entry = writeVariableFixture(root, 12);
-    let server = await createServer({
+    const root = createFixture("vite-dev");
+    const entry = writeVariableFixture(root, 12);
+    const server = await createServer({
       root,
       appType: "custom",
       logLevel: "silent",
@@ -93,14 +93,14 @@ describe.concurrent("plugin adapters", () => {
     });
 
     try {
-      let first = await server.transformRequest("/src/app.ts");
+      const first = await server.transformRequest("/src/app.ts");
       expect(first?.code).toContain("let input = 12;");
       expect(first?.code).toContain("let value = 144;");
 
       writeVariableFixture(root, 10);
       server.moduleGraph.onFileChange(entry);
 
-      let second = await server.transformRequest("/src/app.ts");
+      const second = await server.transformRequest("/src/app.ts");
       expect(second?.code).toContain("let input = 10;");
       expect(second?.code).toContain("let value = 55;");
       expect(second?.code).not.toContain("let value = 144;");
@@ -110,9 +110,9 @@ describe.concurrent("plugin adapters", () => {
   });
 
   test("vite dev evaluates async comptime bodies", async () => {
-    let root = createFixture("vite-dev-async");
+    const root = createFixture("vite-dev-async");
     writeAsyncFixture(root);
-    let server = await createServer({
+    const server = await createServer({
       root,
       appType: "custom",
       logLevel: "silent",
@@ -123,7 +123,7 @@ describe.concurrent("plugin adapters", () => {
     });
 
     try {
-      let result = await server.transformRequest("/src/app.ts");
+      const result = await server.transformRequest("/src/app.ts");
       expect(result?.code).toContain("let value = 55;");
     } finally {
       await server.close();
@@ -131,10 +131,10 @@ describe.concurrent("plugin adapters", () => {
   });
 
   test("vite dev reevaluates when dynamic comptime imports change", async () => {
-    let root = createFixture("vite-dev-dynamic-import-update");
+    const root = createFixture("vite-dev-dynamic-import-update");
     writeDynamicDependencyFixture(root, "one");
-    let dependency = resolve(root, "src/article.ts");
-    let server = await createServer({
+    const dependency = resolve(root, "src/article.ts");
+    const server = await createServer({
       root,
       appType: "custom",
       logLevel: "silent",
@@ -145,14 +145,14 @@ describe.concurrent("plugin adapters", () => {
     });
 
     try {
-      let first = await server.transformRequest("/src/app.ts");
+      const first = await server.transformRequest("/src/app.ts");
       expect(first?.code).toContain('let html = "one";');
 
       writeDynamicDependencyFixture(root, "two");
       await server.pluginContainer.watchChange(dependency, { event: "update" });
       server.moduleGraph.onFileChange(dependency);
 
-      let second = await server.transformRequest("/src/app.ts");
+      const second = await server.transformRequest("/src/app.ts");
       expect(second?.code).toContain('let html = "two";');
       expect(second?.code).not.toContain('let html = "one";');
     } finally {
@@ -161,12 +161,12 @@ describe.concurrent("plugin adapters", () => {
   });
 
   test("module runner reevaluates dynamic import dependencies after invalidation", async () => {
-    let root = createFixture("module-runner-dynamic-import-update");
-    let entry = writeDynamicDependencyFixture(root, "one");
-    let dependency = resolve(root, "src/article.ts");
-    let source = readFileSync(entry, "utf8");
+    const root = createFixture("module-runner-dynamic-import-update");
+    const entry = writeDynamicDependencyFixture(root, "one");
+    const dependency = resolve(root, "src/article.ts");
+    const source = readFileSync(entry, "utf8");
     let evaluator: ModuleRunnerEvaluator | undefined;
-    let core = createCore({
+    const core = createCore({
       getEvaluator() {
         if (!evaluator) {
           throw new Error("fixture evaluator was used before initialization");
@@ -177,13 +177,13 @@ describe.concurrent("plugin adapters", () => {
     evaluator = new ModuleRunnerEvaluator({ core, cwd: root });
 
     try {
-      let first = await core.transform(source, entry);
+      const first = await core.transform(source, entry);
       expect(first?.code).toContain('export let html = "one";');
 
       writeDynamicDependencyFixture(root, "two");
       core.invalidate(dependency);
 
-      let second = await core.transform(source, entry);
+      const second = await core.transform(source, entry);
       expect(second?.code).toContain('export let html = "two";');
       expect(second?.code).not.toContain('export let html = "one";');
     } finally {
@@ -192,9 +192,9 @@ describe.concurrent("plugin adapters", () => {
   });
 
   test("vite dev strips TypeScript in comptime bodies", async () => {
-    let root = createFixture("vite-dev-typescript-body");
+    const root = createFixture("vite-dev-typescript-body");
     writeTypedAsyncFixture(root);
-    let server = await createServer({
+    const server = await createServer({
       root,
       appType: "custom",
       logLevel: "silent",
@@ -205,7 +205,7 @@ describe.concurrent("plugin adapters", () => {
     });
 
     try {
-      let result = await server.transformRequest("/src/app.ts");
+      const result = await server.transformRequest("/src/app.ts");
       expect(result?.code).toContain('let value = "ok";');
     } finally {
       await server.close();
@@ -213,9 +213,9 @@ describe.concurrent("plugin adapters", () => {
   });
 
   test("vite dev includes comptime cause stack on evaluation errors", async () => {
-    let root = createFixture("vite-dev-error-stack");
+    const root = createFixture("vite-dev-error-stack");
     writeThrowingFixture(root);
-    let server = await createServer({
+    const server = await createServer({
       root,
       appType: "custom",
       logLevel: "silent",
@@ -242,73 +242,73 @@ describe.concurrent("plugin adapters", () => {
   });
 
   test("rolldown build resolves dynamic bare imports from the project", async () => {
-    let root = createFixture("rolldown-dynamic-import");
-    let entry = writeDynamicImportFixture(root);
-    let bundle = await rolldown({
+    const root = createFixture("rolldown-dynamic-import");
+    const entry = writeDynamicImportFixture(root);
+    const bundle = await rolldown({
       cwd: root,
       input: entry,
       plugins: [rolldownComptime()],
     });
-    let output = await bundle.generate({ format: "esm" });
+    const output = await bundle.generate({ format: "esm" });
     await bundle.close();
-    let code = output.output.map((chunk) => (chunk.type === "chunk" ? chunk.code : "")).join("\n");
+    const code = output.output.map((chunk) => (chunk.type === "chunk" ? chunk.code : "")).join("\n");
 
     expect(code).toContain("55");
     expect(code).not.toContain("dynamic-comptime-value");
   });
 
   test("rolldown build resolves dynamic relative imports from the source file", async () => {
-    let root = createFixture("rolldown-dynamic-relative-import");
-    let entry = writeDynamicRelativeImportFixture(root);
-    let bundle = await rolldown({
+    const root = createFixture("rolldown-dynamic-relative-import");
+    const entry = writeDynamicRelativeImportFixture(root);
+    const bundle = await rolldown({
       cwd: root,
       input: entry,
       plugins: [rolldownComptime()],
     });
-    let output = await bundle.generate({ format: "esm" });
+    const output = await bundle.generate({ format: "esm" });
     await bundle.close();
-    let code = output.output.map((chunk) => (chunk.type === "chunk" ? chunk.code : "")).join("\n");
+    const code = output.output.map((chunk) => (chunk.type === "chunk" ? chunk.code : "")).join("\n");
 
     expect(code).toContain("55");
     expect(code).not.toContain("dynamic-relative-value");
   });
 
   test("rolldown build resolves named exports from dynamic package imports", async () => {
-    let root = createFixture("rolldown-dynamic-named-import");
-    let entry = writeDynamicNamedImportFixture(root);
-    let bundle = await rolldown({
+    const root = createFixture("rolldown-dynamic-named-import");
+    const entry = writeDynamicNamedImportFixture(root);
+    const bundle = await rolldown({
       cwd: root,
       input: entry,
       plugins: [rolldownComptime()],
     });
-    let output = await bundle.generate({ format: "esm" });
+    const output = await bundle.generate({ format: "esm" });
     await bundle.close();
-    let code = output.output.map((chunk) => (chunk.type === "chunk" ? chunk.code : "")).join("\n");
+    const code = output.output.map((chunk) => (chunk.type === "chunk" ? chunk.code : "")).join("\n");
 
     expect(code).toContain("55");
     expect(code).not.toContain("named-render-package");
   });
 
   test("rolldown build evaluates JSX inside a TSX comptime body", async () => {
-    let root = createFixture("rolldown-tsx-body");
-    let entry = writeTsxBodyFixture(root);
-    let bundle = await rolldown({
+    const root = createFixture("rolldown-tsx-body");
+    const entry = writeTsxBodyFixture(root);
+    const bundle = await rolldown({
       cwd: root,
       input: entry,
       plugins: [rolldownComptime()],
     });
-    let output = await bundle.generate({ format: "esm" });
+    const output = await bundle.generate({ format: "esm" });
     await bundle.close();
-    let code = output.output.map((chunk) => (chunk.type === "chunk" ? chunk.code : "")).join("\n");
+    const code = output.output.map((chunk) => (chunk.type === "chunk" ? chunk.code : "")).join("\n");
 
     expect(code).toContain("<span>ready</span>");
     expect(code).not.toContain("fixture-jsx");
   });
 
   test("vite build resolves dynamic bare imports from the project", async () => {
-    let root = createFixture("vite-dynamic-import");
-    let entry = writeDynamicImportFixture(root);
-    let output = await build({
+    const root = createFixture("vite-dynamic-import");
+    const entry = writeDynamicImportFixture(root);
+    const output = await build({
       root,
       logLevel: "silent",
       plugins: [viteComptime()],
@@ -322,16 +322,16 @@ describe.concurrent("plugin adapters", () => {
         write: false,
       },
     });
-    let code = collectCode(output);
+    const code = collectCode(output);
 
     expect(code).toContain("55");
     expect(code).not.toContain("dynamic-comptime-value");
   });
 
   test("vite build resolves dynamic relative imports from the source file", async () => {
-    let root = createFixture("vite-dynamic-relative-import");
-    let entry = writeDynamicRelativeImportFixture(root);
-    let output = await build({
+    const root = createFixture("vite-dynamic-relative-import");
+    const entry = writeDynamicRelativeImportFixture(root);
+    const output = await build({
       root,
       logLevel: "silent",
       plugins: [viteComptime()],
@@ -345,16 +345,16 @@ describe.concurrent("plugin adapters", () => {
         write: false,
       },
     });
-    let code = collectCode(output);
+    const code = collectCode(output);
 
     expect(code).toContain("55");
     expect(code).not.toContain("dynamic-relative-value");
   });
 
   test("vite build resolves named exports from dynamic package imports", async () => {
-    let root = createFixture("vite-dynamic-named-import");
-    let entry = writeDynamicNamedImportFixture(root);
-    let output = await build({
+    const root = createFixture("vite-dynamic-named-import");
+    const entry = writeDynamicNamedImportFixture(root);
+    const output = await build({
       root,
       logLevel: "silent",
       plugins: [viteComptime()],
@@ -368,16 +368,16 @@ describe.concurrent("plugin adapters", () => {
         write: false,
       },
     });
-    let code = collectCode(output);
+    const code = collectCode(output);
 
     expect(code).toContain("55");
     expect(code).not.toContain("named-render-package");
   });
 
   test("vite build evaluates JSX inside a TSX comptime body", async () => {
-    let root = createFixture("vite-tsx-body");
-    let entry = writeTsxBodyFixture(root);
-    let output = await build({
+    const root = createFixture("vite-tsx-body");
+    const entry = writeTsxBodyFixture(root);
+    const output = await build({
       root,
       logLevel: "silent",
       plugins: [viteComptime()],
@@ -391,7 +391,7 @@ describe.concurrent("plugin adapters", () => {
         write: false,
       },
     });
-    let code = collectCode(output);
+    const code = collectCode(output);
 
     expect(code).toContain("<span>ready</span>");
     expect(code).not.toContain("fixture-jsx");
@@ -399,13 +399,13 @@ describe.concurrent("plugin adapters", () => {
 });
 
 function createFixture(name: string): string {
-  let root = realpathSync(mkdtempSync(resolve(tmpdir(), `comptime-${name}-`)));
+  const root = realpathSync(mkdtempSync(resolve(tmpdir(), `comptime-${name}-`)));
   mkdirSync(resolve(root, "src"));
   return root;
 }
 
 function writeFixture(root: string): string {
-  let entry = resolve(root, "src/app.ts");
+  const entry = resolve(root, "src/app.ts");
   writeFileSync(
     resolve(root, "src/math.ts"),
     "export function fib(n: number): number { return n < 2 ? n : fib(n - 1) + fib(n - 2); }\n",
@@ -422,7 +422,7 @@ function writeFixture(root: string): string {
 }
 
 function writeVariableFixture(root: string, input: number): string {
-  let entry = resolve(root, "src/app.ts");
+  const entry = resolve(root, "src/app.ts");
   writeFileSync(
     resolve(root, "src/math.ts"),
     "export function fib(n: number): number { return n < 2 ? n : fib(n - 1) + fib(n - 2); }\n",
@@ -441,8 +441,8 @@ function writeVariableFixture(root: string, input: number): string {
 }
 
 function writeDynamicImportFixture(root: string): string {
-  let entry = resolve(root, "src/app.ts");
-  let packageRoot = resolve(root, "node_modules/dynamic-comptime-value");
+  const entry = resolve(root, "src/app.ts");
+  const packageRoot = resolve(root, "node_modules/dynamic-comptime-value");
   mkdirSync(packageRoot, { recursive: true });
   writeFileSync(
     resolve(packageRoot, "package.json"),
@@ -468,7 +468,7 @@ function writeDynamicImportFixture(root: string): string {
 }
 
 function writeDynamicRelativeImportFixture(root: string): string {
-  let entry = resolve(root, "src/app.ts");
+  const entry = resolve(root, "src/app.ts");
   writeFileSync(
     resolve(root, "src/value.ts"),
     ['export let marker = "dynamic-relative-value";', "export let value = 55;"].join("\n"),
@@ -487,7 +487,7 @@ function writeDynamicRelativeImportFixture(root: string): string {
 }
 
 function writeDynamicDependencyFixture(root: string, value: string): string {
-  let entry = resolve(root, "src/app.ts");
+  const entry = resolve(root, "src/app.ts");
   writeFileSync(
     resolve(root, "src/article.ts"),
     [`export function renderArticle() {`, `  return ${JSON.stringify(value)};`, `}`].join("\n"),
@@ -506,8 +506,8 @@ function writeDynamicDependencyFixture(root: string, value: string): string {
 }
 
 function writeDynamicNamedImportFixture(root: string): string {
-  let entry = resolve(root, "src/app.ts");
-  let packageRoot = resolve(root, "node_modules/named-render-package");
+  const entry = resolve(root, "src/app.ts");
+  const packageRoot = resolve(root, "node_modules/named-render-package");
   mkdirSync(packageRoot, { recursive: true });
   writeFileSync(
     resolve(packageRoot, "package.json"),
@@ -550,8 +550,8 @@ function writeDynamicNamedImportFixture(root: string): string {
 }
 
 function writeTsxBodyFixture(root: string): string {
-  let entry = resolve(root, "src/app.tsx");
-  let packageRoot = resolve(root, "node_modules/fixture-jsx");
+  const entry = resolve(root, "src/app.tsx");
+  const packageRoot = resolve(root, "node_modules/fixture-jsx");
   mkdirSync(packageRoot, { recursive: true });
   writeFileSync(
     resolve(root, "tsconfig.json"),
@@ -598,7 +598,7 @@ function writeTsxBodyFixture(root: string): string {
 }
 
 function writeAsyncFixture(root: string): string {
-  let entry = resolve(root, "src/app.ts");
+  const entry = resolve(root, "src/app.ts");
   writeFileSync(
     entry,
     [
@@ -612,7 +612,7 @@ function writeAsyncFixture(root: string): string {
 }
 
 function writeTypedAsyncFixture(root: string): string {
-  let entry = resolve(root, "src/app.ts");
+  const entry = resolve(root, "src/app.ts");
   writeFileSync(
     entry,
     [
@@ -628,7 +628,7 @@ function writeTypedAsyncFixture(root: string): string {
 }
 
 function writeThrowingFixture(root: string): string {
-  let entry = resolve(root, "src/app.ts");
+  const entry = resolve(root, "src/app.ts");
   writeFileSync(
     entry,
     [
@@ -649,7 +649,7 @@ function collectCode(value: unknown): string {
   if (!isRecord(value)) {
     return "";
   }
-  let output = value.output;
+  const output = value.output;
   if (!Array.isArray(output)) {
     return "";
   }

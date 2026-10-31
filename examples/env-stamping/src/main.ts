@@ -6,7 +6,7 @@ type Stamp = {
   assertion: string;
 };
 
-let stamp = comptime<Stamp>(() => {
+const stamp = comptime<Stamp>(() => {
   let channel = process.env.COMPTIME_CHANNEL ?? "local";
   if (channel.trim() === "") {
     throw new Error("COMPTIME_CHANNEL cannot be empty");
@@ -19,7 +19,7 @@ let stamp = comptime<Stamp>(() => {
   };
 });
 
-let target = document.querySelector("#stamp");
+const target = document.querySelector("#stamp");
 
 if (target) {
   target.innerHTML = `

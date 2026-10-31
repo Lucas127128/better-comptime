@@ -91,7 +91,7 @@ export class ModuleRunnerEvaluator implements Evaluator {
 
   async evaluate(virtualId: string): Promise<unknown> {
     this.#invalidate(virtualId);
-    let module = await this.#runner.import(virtualId);
+    const module = await this.#runner.import(virtualId);
     return readDefaultExport(module);
   }
 
@@ -102,7 +102,7 @@ export class ModuleRunnerEvaluator implements Evaluator {
   }
 
   async #handleInvoke(payload: unknown): Promise<unknown> {
-    let request = parseInvokeRequest(payload);
+    const request = parseInvokeRequest(payload);
     if (request.name === "getBuiltins") {
       return builtinIds();
     }
@@ -113,9 +113,9 @@ export class ModuleRunnerEvaluator implements Evaluator {
   }
 
   async #fetchModule(args: unknown[]): Promise<FetchModuleResult> {
-    let id = typeof args[0] === "string" ? args[0] : undefined;
-    let importer = typeof args[1] === "string" ? args[1] : undefined;
-    let cached = isRecord(args[2]) && args[2].cached === true;
+    const id = typeof args[0] === "string" ? args[0] : undefined;
+    const importer = typeof args[1] === "string" ? args[1] : undefined;
+    const cached = isRecord(args[2]) && args[2].cached === true;
 
     if (id === undefined) {
       throw new Error("ModuleRunner fetchModule expected a string id");
@@ -127,8 +127,8 @@ export class ModuleRunnerEvaluator implements Evaluator {
       return { externalize: id, type: "builtin" };
     }
 
-    let hostImporter = toHostImporter(importer);
-    let hostResolved = await this.#host?.resolve(id, hostImporter);
+    const hostImporter = toHostImporter(importer);
+    const hostResolved = await this.#host?.resolve(id, hostImporter);
     if (hostResolved) {
       if (hostResolved.external) {
         return {
@@ -136,7 +136,7 @@ export class ModuleRunnerEvaluator implements Evaluator {
           type: "module",
         };
       }
-      let loaded = await this.#loadResolvedModule(hostResolved.id);
+      const loaded = await this.#loadResolvedModule(hostResolved.id);
       return await this.#transform(loaded);
     }
 
@@ -147,12 +147,12 @@ export class ModuleRunnerEvaluator implements Evaluator {
       };
     }
 
-    let loaded = await this.#loadModule(id, importer);
+    const loaded = await this.#loadModule(id, importer);
     return await this.#transform(loaded);
   }
 
   async #transform(loaded: LoadedModule): Promise<FetchModuleResult> {
-    let transformed = await transformForModuleRunner(loaded.id, loaded.code, this.#cwd);
+    const transformed = await transformForModuleRunner(loaded.id, loaded.code, this.#cwd);
 
     return {
       code: transformed,
@@ -164,33 +164,33 @@ export class ModuleRunnerEvaluator implements Evaluator {
   }
 
   async #loadModule(id: string, importer: string | undefined): Promise<LoadedModule> {
-    let virtual = this.#core.resolveId(id);
+    const virtual = this.#core.resolveId(id);
     if (virtual) {
-      let code = this.#core.load(virtual);
+      const code = this.#core.load(virtual);
       if (code != null) {
         return { id: virtual, code };
       }
     }
 
-    let resolved = this.#resolve(id, importer);
+    const resolved = this.#resolve(id, importer);
     return await this.#loadResolvedModule(resolved);
   }
 
   async #loadResolvedModule(resolved: string): Promise<LoadedModule> {
-    let virtual = this.#core.resolveId(resolved);
+    const virtual = this.#core.resolveId(resolved);
     if (virtual) {
-      let code = this.#core.load(virtual);
+      const code = this.#core.load(virtual);
       if (code != null) return { id: virtual, code };
     }
 
-    let hostCode = await this.#host?.load(resolved);
+    const hostCode = await this.#host?.load(resolved);
     if (hostCode != null) return { id: resolved, code: hostCode };
 
     return { id: resolved, code: await readFile(resolved, "utf8") };
   }
 
   #invalidate(id: string): void {
-    let module = this.#runner.evaluatedModules.getModuleById(id);
+    const module = this.#runner.evaluatedModules.getModuleById(id);
     if (module) {
       this.#invalidateModule(module, new Set());
     }
@@ -201,8 +201,8 @@ export class ModuleRunnerEvaluator implements Evaluator {
       return;
     }
     seen.add(module.id);
-    for (let imported of module.imports) {
-      let dependency = this.#runner.evaluatedModules.getModuleById(imported);
+    for (const imported of module.imports) {
+      const dependency = this.#runner.evaluatedModules.getModuleById(imported);
       if (dependency) {
         this.#invalidateModule(dependency, seen);
       }
@@ -211,7 +211,7 @@ export class ModuleRunnerEvaluator implements Evaluator {
   }
 
   #resolve(id: string, importer: string | undefined): string {
-    let evaluationPath = readEvaluationPath(id);
+    const evaluationPath = readEvaluationPath(id);
     if (evaluationPath) {
       return resolveExistingPath(evaluationPath);
     }
@@ -219,8 +219,8 @@ export class ModuleRunnerEvaluator implements Evaluator {
       return new URL(id).pathname;
     }
 
-    let base = resolveImporterBase(importer, this.#cwd);
-    let candidate = isAbsolute(id) ? id : resolve(base, id);
+    const base = resolveImporterBase(importer, this.#cwd);
+    const candidate = isAbsolute(id) ? id : resolve(base, id);
     return resolveExistingPath(candidate);
   }
 }
@@ -233,8 +233,8 @@ export function readDefaultExport(module: unknown): unknown {
 }
 
 async function transformForModuleRunner(id: string, source: string, cwd: string): Promise<string> {
-  let filename = createTransformFilename(id, cwd);
-  let stripped = await transform(filename, source, {
+  const filename = createTransformFilename(id, cwd);
+  const stripped = await transform(filename, source, {
     cwd,
     lang: inferLang(filename),
     sourceType: "module",
@@ -244,7 +244,7 @@ async function transformForModuleRunner(id: string, source: string, cwd: string)
     throw stripped.errors[0] ?? new Error("Rolldown transform failed");
   }
 
-  let transformed = await moduleRunnerTransform(filename, stripped.code, { sourcemap: true });
+  const transformed = await moduleRunnerTransform(filename, stripped.code, { sourcemap: true });
   if (transformed.errors.length > 0) {
     throw transformed.errors[0] ?? new Error("Rolldown moduleRunnerTransform failed");
   }
@@ -252,9 +252,9 @@ async function transformForModuleRunner(id: string, source: string, cwd: string)
 }
 
 function createTransformFilename(id: string, cwd: string): string {
-  let evaluationPath = readEvaluationPath(id);
+  const evaluationPath = readEvaluationPath(id);
   if (evaluationPath) {
-    let extension = extname(evaluationPath) || ".ts";
+    const extension = extname(evaluationPath) || ".ts";
     return `${evaluationPath}.comptime${extension}`;
   }
   return id.startsWith("\0") ? resolve(cwd, `${sanitizeVirtualId(id)}.ts`) : id;
@@ -264,15 +264,15 @@ function parseInvokeRequest(payload: unknown): InvokeRequest {
   if (!isRecord(payload)) {
     throw new Error("ModuleRunner invoke payload must be an object");
   }
-  let data = payload.data;
+  const data = payload.data;
   if (!isRecord(data)) {
     throw new Error("ModuleRunner invoke payload is missing data");
   }
-  let name = data.name;
+  const name = data.name;
   if (typeof name !== "string") {
     throw new Error("ModuleRunner invoke payload is missing a name");
   }
-  let args = data.data;
+  const args = data.data;
   return { name, data: Array.isArray(args) ? args : [] };
 }
 
@@ -282,14 +282,14 @@ function resolveExistingPath(path: string): string {
   }
 
   if (extname(path) === "") {
-    for (let extension of RESOLUTION_EXTENSIONS) {
-      let candidate = `${path}${extension}`;
+    for (const extension of RESOLUTION_EXTENSIONS) {
+      const candidate = `${path}${extension}`;
       if (existsSync(candidate)) {
         return candidate;
       }
     }
-    for (let extension of RESOLUTION_EXTENSIONS) {
-      let candidate = resolve(path, `index${extension}`);
+    for (const extension of RESOLUTION_EXTENSIONS) {
+      const candidate = resolve(path, `index${extension}`);
       if (existsSync(candidate)) {
         return candidate;
       }
@@ -303,7 +303,7 @@ function resolveExternal(id: string, importer: string | undefined, cwd: string):
   if (!isBareSpecifier(id)) {
     return id;
   }
-  let base = resolveImporterBase(importer, cwd);
+  const base = resolveImporterBase(importer, cwd);
   return createRequire(resolve(base, "comptime-evaluator.js")).resolve(id);
 }
 
@@ -311,7 +311,7 @@ function resolveImporterBase(importer: string | undefined, cwd: string): string 
   if (!importer) {
     return cwd;
   }
-  let evaluationPath = readEvaluationPath(importer);
+  const evaluationPath = readEvaluationPath(importer);
   if (evaluationPath) {
     return dirname(evaluationPath);
   }
@@ -326,7 +326,7 @@ function toHostImporter(importer: string | undefined): string | undefined {
 }
 
 function readEvaluationPath(id: string): string | undefined {
-  let prefix = id.indexOf(EVALUATION_VIRTUAL_PREFIX);
+  const prefix = id.indexOf(EVALUATION_VIRTUAL_PREFIX);
   if (prefix === -1) {
     return undefined;
   }
@@ -334,12 +334,12 @@ function readEvaluationPath(id: string): string | undefined {
 }
 
 function stripEvaluationQuery(id: string): string {
-  let marker = id.lastIndexOf(EVALUATION_INDEX_MARKER);
+  const marker = id.lastIndexOf(EVALUATION_INDEX_MARKER);
   return marker === -1 ? id : id.slice(0, marker);
 }
 
 function inferLang(id: string): "js" | "jsx" | "ts" | "tsx" {
-  let extension = extname(id);
+  const extension = extname(id);
   if (extension === ".tsx") {
     return "tsx";
   }
@@ -363,13 +363,13 @@ function isBareSpecifier(id: string): boolean {
 }
 
 function isBuiltin(id: string): boolean {
-  let name = id.startsWith("node:") ? id.slice(5) : id;
+  const name = id.startsWith("node:") ? id.slice(5) : id;
   return builtinModules.includes(name);
 }
 
 function builtinIds(): string[] {
-  let ids: string[] = [];
-  for (let module of builtinModules) {
+  const ids: string[] = [];
+  for (const module of builtinModules) {
     ids.push(module);
     ids.push(`node:${module}`);
   }
@@ -378,7 +378,7 @@ function builtinIds(): string[] {
 
 function serializeError(error: unknown): SerializableError {
   if (error instanceof Error) {
-    let serialized: SerializableError = {
+    const serialized: SerializableError = {
       message: error.message,
       name: error.name,
     };

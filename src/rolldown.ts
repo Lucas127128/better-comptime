@@ -8,7 +8,7 @@ export type { Serializer } from "./shared";
 
 export function comptime(options?: Options): Plugin {
   let evaluator: ModuleRunnerEvaluator | undefined;
-  let core = createCore({ getEvaluator, options });
+  const core = createCore({ getEvaluator, options });
 
   function getEvaluator(): Evaluator {
     if (evaluator) return evaluator;
@@ -29,7 +29,7 @@ export function comptime(options?: Options): Plugin {
     async transform(code, id) {
       evaluator?.setHost({
         resolve: async (source, importer) => {
-          let resolved = await this.resolve(source, importer);
+          const resolved = await this.resolve(source, importer);
           if (!resolved) return null;
 
           return {
@@ -38,12 +38,12 @@ export function comptime(options?: Options): Plugin {
           };
         },
         load: async (id) => {
-          let loaded = await this.load({ id, resolveDependencies: false });
+          const loaded = await this.load({ id, resolveDependencies: false });
           return loaded.code;
         },
       });
       try {
-        let result = await core.transform(code, id, {
+        const result = await core.transform(code, id, {
           addWatchFile: this.addWatchFile.bind(this),
           resolve: async (source, importer) => {
             let resolved = await this.resolve(source, importer);

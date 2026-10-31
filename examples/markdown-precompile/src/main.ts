@@ -1,6 +1,6 @@
 import { comptime } from "better-comptime";
 
-let markdown = `
+const markdown = `
 # Build-time markdown
 
 This HTML was rendered by **md4x** inside \`comptime()\`.
@@ -15,12 +15,12 @@ This HTML was rendered by **md4x** inside \`comptime()\`.
 - no hydration step
 `;
 
-let html = comptime(async () => {
+const html = comptime(async () => {
   let { renderToHtml } = await import("md4x/napi");
   return renderToHtml(markdown);
 });
 
-let article = document.querySelector("#article");
+const article = document.querySelector("#article");
 
 if (article) {
   article.innerHTML = html;

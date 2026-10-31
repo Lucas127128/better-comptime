@@ -7,9 +7,9 @@ type Sample = {
   cosine: number;
 };
 
-let samples = comptime<Sample[]>(() =>
+const samples = comptime<Sample[]>(() =>
   Array.from({ length: 16 }, (_item, index) => {
-    let radians = (index / 16) * Math.PI * 2;
+    const radians = (index / 16) * Math.PI * 2;
     return {
       index,
       degrees: Math.round((radians * 180) / Math.PI),
@@ -19,7 +19,7 @@ let samples = comptime<Sample[]>(() =>
   }),
 );
 
-let target = document.querySelector("#samples");
+const target = document.querySelector("#samples");
 
 if (target) {
   target.innerHTML = samples

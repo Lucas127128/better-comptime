@@ -18,14 +18,14 @@ class ViteEvaluator implements Evaluator {
 
   constructor(options: ViteEvaluatorOptions) {
     this.#fallback = options.fallback;
-    this.#getServer = options.getServer;
+    this.#getServer = () => options.getServer();
   }
 
   async evaluate(virtualId: string, origin: string): Promise<unknown> {
-    let server = this.#getServer();
+    const server = this.#getServer();
     if (server) {
       invalidateVirtualModule(server, virtualId);
-      let viteVirtualId = toDevID(origin, virtualId);
+      const viteVirtualId = toDevID(origin, virtualId);
       // Vite dev loads the source-file alias so its normal TS/TSX transform runs; build fallback
       // keeps using the internal \0 id that the module runner can import directly.
       invalidateVirtualModule(server, viteVirtualId);
@@ -53,7 +53,7 @@ class ViteEvaluator implements Evaluator {
 export function comptime(options?: Options): Plugin {
   let server: ViteDevServer | undefined;
   let evaluator: ViteEvaluator | undefined;
-  let core = createCore({ getEvaluator, options });
+  const core = createCore({ getEvaluator, options });
 
   function getEvaluator(): Evaluator {
     if (evaluator) return evaluator;
@@ -81,7 +81,7 @@ export function comptime(options?: Options): Plugin {
     async transform(code, id) {
       evaluator?.setHost({
         resolve: async (source, importer) => {
-          let resolved = await this.resolve(source, importer);
+          const resolved = await this.resolve(source, importer);
           if (!resolved) return null;
 
           return {
@@ -90,16 +90,16 @@ export function comptime(options?: Options): Plugin {
           };
         },
         load: async (id) => {
-          let loaded = await this.load({ id, resolveDependencies: false });
+          const loaded = await this.load({ id, resolveDependencies: false });
           return loaded.code;
         },
       });
 
       try {
-        let result = await core.transform(code, id, {
+        const result = await core.transform(code, id, {
           addWatchFile: this.addWatchFile.bind(this),
           resolve: async (source, importer) => {
-            let resolved = await this.resolve(source, importer);
+            const resolved = await this.resolve(source, importer);
             if (!resolved || resolved.external) return null;
             return resolved.id;
           },
@@ -125,14 +125,14 @@ export function comptime(options?: Options): Plugin {
 }
 
 function invalidateVirtualModule(server: ViteDevServer, id: string): void {
-  let module = server.moduleGraph.getModuleById(id);
+  const module = server.moduleGraph.getModuleById(id);
   if (module) {
     server.moduleGraph.invalidateModule(module);
   }
 
-  let ssrGraph = server.environments?.ssr?.moduleGraph;
-  let ssrModule = ssrGraph?.getModuleById(id);
+  const ssrGraph = server.environments.ssr.moduleGraph;
+  const ssrModule = ssrGraph.getModuleById(id);
   if (ssrModule) {
-    ssrGraph?.invalidateModule(ssrModule);
+    ssrGraph.invalidateModule(ssrModule);
   }
 }

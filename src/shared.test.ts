@@ -16,7 +16,7 @@ function createCoreWithEvaluator(
   options?: Options,
 ): ComptimeCore {
   let core: ComptimeCore | undefined;
-  let evaluator: Evaluator = {
+  const evaluator: Evaluator = {
     async evaluate(virtualId) {
       let body = core?.load(virtualId);
       if (body !== undefined && body !== null) {
@@ -37,9 +37,9 @@ function createCoreWithEvaluator(
 
 describe.concurrent("shared transform core", () => {
   test("replaces imported comptime calls with serialized values", async () => {
-    let bodies: string[] = [];
-    let core = createCoreWithEvaluator(3, bodies);
-    let result = await core.transform(
+    const bodies: string[] = [];
+    const core = createCoreWithEvaluator(3, bodies);
+    const result = await core.transform(
       'import { comptime } from "better-comptime";\nlet value = comptime(() => 1 + 2);\n',
       "/project/src/app.ts",
     );
@@ -50,9 +50,9 @@ describe.concurrent("shared transform core", () => {
   });
 
   test("ignores comptime identifiers that are not imported from the package", async () => {
-    let bodies: string[] = [];
-    let core = createCoreWithEvaluator(1, bodies);
-    let result = await core.transform(
+    const bodies: string[] = [];
+    const core = createCoreWithEvaluator(1, bodies);
+    const result = await core.transform(
       "let comptime = (fn: () => number) => fn();\nlet value = comptime(() => 2);\n",
       "/project/src/app.ts",
     );
@@ -62,9 +62,9 @@ describe.concurrent("shared transform core", () => {
   });
 
   test("supports aliased imports and does not transform a shadowed binding", async () => {
-    let bodies: string[] = [];
-    let core = createCoreWithEvaluator(8, bodies);
-    let result = await core.transform(
+    const bodies: string[] = [];
+    const core = createCoreWithEvaluator(8, bodies);
+    const result = await core.transform(
       [
         'import { comptime as ct } from "better-comptime";',
         "function demo(ct: (fn: () => number) => number) {",
@@ -81,8 +81,8 @@ describe.concurrent("shared transform core", () => {
   });
 
   test("captures referenced imports as absolute imports in virtual modules", async () => {
-    let bodies: string[] = [];
-    let core = createCoreWithEvaluator(55, bodies);
+    const bodies: string[] = [];
+    const core = createCoreWithEvaluator(55, bodies);
     await core.transform(
       [
         'import { comptime } from "better-comptime";',
@@ -98,8 +98,8 @@ describe.concurrent("shared transform core", () => {
   });
 
   test("includes top-level declarations used by the comptime body", async () => {
-    let bodies: string[] = [];
-    let core = createCoreWithEvaluator(12, bodies);
+    const bodies: string[] = [];
+    const core = createCoreWithEvaluator(12, bodies);
     await core.transform(
       [
         'import { comptime } from "better-comptime";',
@@ -115,7 +115,7 @@ describe.concurrent("shared transform core", () => {
   });
 
   test("reports invalid call shapes at the original location", async () => {
-    let core = createCoreWithEvaluator(0, []);
+    const core = createCoreWithEvaluator(0, []);
     let thrown: unknown;
 
     try {
@@ -136,7 +136,7 @@ describe.concurrent("shared transform core", () => {
   });
 
   test("wraps serialization failures with the call site", async () => {
-    let core = createCoreWithEvaluator(() => 1, []);
+    const core = createCoreWithEvaluator(() => 1, []);
     let thrown: unknown;
 
     try {
@@ -156,19 +156,19 @@ describe.concurrent("shared transform core", () => {
   });
 
   test("includes evaluation cause stack on runtime failures", async () => {
-    let cause = new Error("fixture failed");
+    const cause = new Error("fixture failed");
     cause.stack = [
       "Error: fixture failed",
       "    at runFixture (comptime:/project/src/app.comptime-0.ts:4:9)",
     ].join("\n");
     includeEvaluationCauseStack(cause);
-    let evaluator: Evaluator = {
+    const evaluator: Evaluator = {
       async evaluate() {
         throw cause;
       },
       async dispose() {},
     };
-    let core = createCore({ getEvaluator: () => evaluator });
+    const core = createCore({ getEvaluator: () => evaluator });
     let thrown: unknown;
 
     try {
@@ -189,7 +189,7 @@ describe.concurrent("shared transform core", () => {
   });
 
   test("uses configured serializers", async () => {
-    let serializer: Serializer = {
+    const serializer: Serializer = {
       test(value) {
         return value instanceof AssetRef;
       },
@@ -200,8 +200,8 @@ describe.concurrent("shared transform core", () => {
         throw new Error("unexpected serializer input");
       },
     };
-    let core = createCoreWithEvaluator(new AssetRef("/docs"), [], { serializers: [serializer] });
-    let result = await core.transform(
+    const core = createCoreWithEvaluator(new AssetRef("/docs"), [], { serializers: [serializer] });
+    const result = await core.transform(
       'import { comptime } from "better-comptime";\nlet value = comptime(() => new URL("https://example.com/docs"));\n',
       "/project/src/app.ts",
     );
@@ -210,13 +210,13 @@ describe.concurrent("shared transform core", () => {
   });
 
   test("times out slow evaluations", async () => {
-    let evaluator: Evaluator = {
+    const evaluator: Evaluator = {
       async evaluate() {
         return await new Promise((resolve) => setTimeout(() => resolve("late"), 5));
       },
       async dispose() {},
     };
-    let core = createCore({
+    const core = createCore({
       getEvaluator: () => evaluator,
       options: { timeout: 1 },
     });
@@ -239,21 +239,21 @@ describe.concurrent("shared transform core", () => {
 
   test("includes statically read env values in the cache key", async () => {
     let count = 0;
-    let evaluator: Evaluator = {
+    const evaluator: Evaluator = {
       async evaluate() {
         count += 1;
         return count;
       },
       async dispose() {},
     };
-    let core = createCore({ getEvaluator: () => evaluator });
-    let code =
+    const core = createCore({ getEvaluator: () => evaluator });
+    const code =
       'import { comptime } from "better-comptime";\nlet value = comptime(() => process.env.BUILD_ID);\n';
     process.env.BUILD_ID = "one";
-    let first = await core.transform(code, "/project/src/app.ts");
-    let second = await core.transform(code, "/project/src/app.ts");
+    const first = await core.transform(code, "/project/src/app.ts");
+    const second = await core.transform(code, "/project/src/app.ts");
     process.env.BUILD_ID = "two";
-    let third = await core.transform(code, "/project/src/app.ts");
+    const third = await core.transform(code, "/project/src/app.ts");
 
     expect(first?.code).toContain("1");
     expect(second?.code).toContain("1");

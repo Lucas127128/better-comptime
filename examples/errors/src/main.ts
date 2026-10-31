@@ -1,8 +1,8 @@
 import { comptime } from "better-comptime";
 
-let message = comptime<string>(() => readReleaseManifest());
+const message = comptime<string>(() => readReleaseManifest());
 
-let target = document.querySelector("#message");
+const target = document.querySelector("#message");
 
 if (target instanceof HTMLElement) {
   target.textContent = message;

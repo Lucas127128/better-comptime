@@ -168,9 +168,9 @@ type Declaration = {
 };
 
 export function createCore(input: CreateCoreOptions): ComptimeCore {
-  let options = normalizeOptions(input.options);
-  let virtualModules = new Map<string, string>();
-  let cache = new Map<string, string>();
+  const options = normalizeOptions(input.options);
+  const virtualModules = new Map<string, string>();
+  const cache = new Map<string, string>();
 
   return {
     resolveId(id) {
@@ -192,11 +192,11 @@ export function createCore(input: CreateCoreOptions): ComptimeCore {
         return null;
       }
 
-      let parseResult = parseSync(id, code, {
+      const parseResult = parseSync(id, code, {
         astType: "ts",
         sourceType: "module",
       });
-      let parseError = parseResult.errors.find((error) => error.severity === "Error");
+      const parseError = parseResult.errors.find((error) => error.severity === "Error");
       if (parseError) {
         throw new ComptimeTransformError({
           message: parseError.message,
@@ -207,22 +207,22 @@ export function createCore(input: CreateCoreOptions): ComptimeCore {
         });
       }
 
-      let comptimeBindings = collectComptimeBindings(parseResult.module.staticImports);
+      const comptimeBindings = collectComptimeBindings(parseResult.module.staticImports);
       if (comptimeBindings.size === 0) {
         return null;
       }
 
-      let calls = findComptimeCalls(parseResult.program, comptimeBindings);
+      const calls = findComptimeCalls(parseResult.program, comptimeBindings);
       if (calls.length === 0) {
         return null;
       }
 
-      let imports = collectImportBindings(parseResult.module.staticImports, id, comptimeBindings);
-      let declarations = collectTopLevelDeclarations(parseResult.program, code);
-      let edited = new MagicString(code);
+      const imports = collectImportBindings(parseResult.module.staticImports, id, comptimeBindings);
+      const declarations = collectTopLevelDeclarations(parseResult.program, code);
+      const edited = new MagicString(code);
 
-      for (let call of calls) {
-        let fnInfo = getFunctionInfo(call.fn, code, id);
+      for (const call of calls) {
+        const fnInfo = getFunctionInfo(call.fn, code, id);
         if (!fnInfo.valid) {
           throw new ComptimeTransformError({
             message: "comptime() requires a single arrow function with no parameters",
@@ -232,24 +232,24 @@ export function createCore(input: CreateCoreOptions): ComptimeCore {
           });
         }
 
-        let refs = collectIdentifierReferences(fnInfo.bodyNode);
-        let capturedImports = createImportStatements(imports, refs);
-        let capturedDeclarations = createDeclarationStatements(
+        const refs = collectIdentifierReferences(fnInfo.bodyNode);
+        const capturedImports = createImportStatements(imports, refs);
+        const capturedDeclarations = createDeclarationStatements(
           declarations,
           refs,
           call.start,
           call.end,
         );
-        let envReads = collectEnvReads(fnInfo.bodyNode);
+        const envReads = collectEnvReads(fnInfo.bodyNode);
         enforceEnvPolicy(envReads, options, code, id, call.start);
 
-        for (let captured of capturedImports.watchFiles) {
+        for (const captured of capturedImports.watchFiles) {
           context?.addWatchFile?.(captured);
         }
 
-        let virtualId = createVirtualId(id, call.index);
-        let body = await resolveDynamicImports(fnInfo, code, id, context);
-        let moduleBody = createVirtualModule(
+        const virtualId = createVirtualId(id, call.index);
+        const body = await resolveDynamicImports(fnInfo, code, id, context);
+        const moduleBody = createVirtualModule(
           capturedImports.statements,
           capturedDeclarations,
           body,
@@ -260,7 +260,7 @@ export function createCore(input: CreateCoreOptions): ComptimeCore {
         // normal TS/TSX transform before SSR parsing.
         virtualModules.set(toDevID(id, virtualId), moduleBody);
 
-        let cacheKey = createCacheKey(moduleBody, envReads);
+        const cacheKey = createCacheKey(moduleBody, envReads);
         let literal = cache.get(cacheKey);
         if (literal === undefined) {
           try {
@@ -327,7 +327,7 @@ function shouldScan(id: string, code: string, options: NormalizedOptions): boole
     return false;
   }
 
-  let cleanId = stripQuery(id);
+  const cleanId = stripQuery(id);
   if (!SUPPORTED_EXTENSIONS.has(extname(cleanId))) {
     return false;
   }
@@ -352,7 +352,7 @@ function matchesPattern(value: string, pattern: string): boolean {
     return value.includes(pattern);
   }
 
-  let escaped = pattern
+  const escaped = pattern
     .replaceAll("\\", "\\\\")
     .replaceAll(".", "\\.")
     .replaceAll("+", "\\+")
@@ -371,12 +371,12 @@ function matchesPattern(value: string, pattern: string): boolean {
 }
 
 function collectComptimeBindings(imports: StaticImportLike[]): Set<string> {
-  let names = new Set<string>();
-  for (let item of imports) {
+  const names = new Set<string>();
+  for (const item of imports) {
     if (item.moduleRequest.value !== PACKAGE_NAME) {
       continue;
     }
-    for (let entry of item.entries) {
+    for (const entry of item.entries) {
       if (entry.isType) {
         continue;
       }
@@ -393,17 +393,17 @@ function collectImportBindings(
   origin: string,
   comptimeBindings: Set<string>,
 ): Map<string, ImportBinding> {
-  let result = new Map<string, ImportBinding>();
-  for (let item of imports) {
+  const result = new Map<string, ImportBinding>();
+  for (const item of imports) {
     if (item.moduleRequest.value === PACKAGE_NAME) {
       continue;
     }
 
-    for (let entry of item.entries) {
+    for (const entry of item.entries) {
       if (entry.isType || comptimeBindings.has(entry.localName.value)) {
         continue;
       }
-      let moduleRequest = resolveImport(item.moduleRequest.value, origin);
+      const moduleRequest = resolveImport(item.moduleRequest.value, origin);
       result.set(entry.localName.value, {
         localName: entry.localName.value,
         statement: createImportStatement(entry, moduleRequest),
@@ -421,7 +421,7 @@ function createImportStatement(entry: StaticImportEntryLike, moduleRequest: stri
   } else if (entry.importName.kind === "NamespaceObject") {
     specifier = `* as ${entry.localName.value}`;
   } else {
-    let imported = entry.importName.name ?? entry.localName.value;
+    const imported = entry.importName.name ?? entry.localName.value;
     specifier =
       imported === entry.localName.value
         ? `{ ${imported} }`
@@ -432,7 +432,7 @@ function createImportStatement(entry: StaticImportEntryLike, moduleRequest: stri
 
 function resolveImport(specifier: string, origin: string): string {
   if (specifier.startsWith(".") || specifier.startsWith("/")) {
-    let base = dirname(stripQuery(origin));
+    const base = dirname(stripQuery(origin));
     return isAbsolute(specifier) ? specifier : resolve(base, specifier);
   }
   if (specifier.startsWith("file:")) {
@@ -442,8 +442,8 @@ function resolveImport(specifier: string, origin: string): string {
 }
 
 function findComptimeCalls(program: unknown, importedNames: Set<string>): RawCall[] {
-  let calls: RawCall[] = [];
-  let scopes: Array<Set<string>> = [new Set()];
+  const calls: RawCall[] = [];
+  const scopes: Array<Set<string>> = [new Set()];
   visitForCalls(program, importedNames, scopes, calls);
   return calls.map((call, index) => ({
     ...call,
@@ -473,7 +473,7 @@ function visitForCalls(
     value.type === "FunctionExpression" ||
     value.type === "ArrowFunctionExpression"
   ) {
-    let scope = collectFunctionScope(value);
+    const scope = collectFunctionScope(value);
     scopes.push(scope);
     visitFunctionChildrenForCalls(value, importedNames, scopes, calls);
     scopes.pop();
@@ -481,13 +481,13 @@ function visitForCalls(
   }
 
   if (value.type === "CallExpression") {
-    let callee = readNode(value, "callee");
-    let name = readIdentifierName(callee);
+    const callee = readNode(value, "callee");
+    const name = readIdentifierName(callee);
     if (name && importedNames.has(name) && !isShadowed(name, scopes)) {
-      let start = readOffset(value, "start");
-      let end = readOffset(value, "end");
-      let args = readArray(value, "arguments");
-      let firstArg = args[0];
+      const start = readOffset(value, "start");
+      const end = readOffset(value, "end");
+      const args = readArray(value, "arguments");
+      const firstArg = args[0];
       if (start !== undefined && end !== undefined && isAstNode(firstArg)) {
         calls.push({
           node: value,
@@ -517,7 +517,7 @@ function visitFunctionChildrenForCalls(
   scopes: Array<Set<string>>,
   calls: RawCall[],
 ): void {
-  let body = readNode(node, "body");
+  const body = readNode(node, "body");
   if (body) {
     visitForCalls(body, importedNames, scopes, calls);
   }
@@ -553,13 +553,13 @@ function getFunctionInfo(
     return { valid: false };
   }
 
-  let bodyNode = readNode(fn, "body");
+  const bodyNode = readNode(fn, "body");
   if (!bodyNode) {
     return { valid: false };
   }
 
-  let start = readOffset(bodyNode, "start");
-  let end = readOffset(bodyNode, "end");
+  const start = readOffset(bodyNode, "start");
+  const end = readOffset(bodyNode, "end");
   if (start === undefined || end === undefined) {
     throw new ComptimeTransformError({
       message: "comptime() body is missing source offsets",
@@ -603,10 +603,10 @@ async function resolveDynamicImports(
     return fnInfo.body;
   }
 
-  let imports = collectDynamicImports(fnInfo.bodyNode, fnInfo);
+  const imports = collectDynamicImports(fnInfo.bodyNode, fnInfo);
   let edited: MagicString | undefined;
-  for (let item of imports) {
-    let resolved = await context.resolve(item.specifier, id);
+  for (const item of imports) {
+    const resolved = await context.resolve(item.specifier, id);
     if (!resolved || resolved === item.specifier) {
       continue;
     }
@@ -629,7 +629,7 @@ function collectDynamicImports(
   root: AstNode,
   fnInfo: { bodyPrefixLength: number; bodySourceOffset: number },
 ): DynamicImport[] {
-  let imports: DynamicImport[] = [];
+  const imports: DynamicImport[] = [];
   visitChildren(root, (child) => collectDynamicImportsFromNode(child, fnInfo, imports));
   return imports;
 }
@@ -644,11 +644,11 @@ function collectDynamicImportsFromNode(
   }
 
   if (value.type === "ImportExpression") {
-    let source = readNode(value, "source");
-    let start = source ? readOffset(source, "start") : undefined;
-    let end = source ? readOffset(source, "end") : undefined;
+    const source = readNode(value, "source");
+    const start = source ? readOffset(source, "start") : undefined;
+    const end = source ? readOffset(source, "end") : undefined;
     if (source?.type === "Literal" && start !== undefined && end !== undefined) {
-      let specifier = source.value;
+      const specifier = source.value;
       if (typeof specifier === "string") {
         imports.push({
           specifier,
@@ -663,10 +663,10 @@ function collectDynamicImportsFromNode(
 }
 
 function createVirtualModule(imports: string[], declarations: string[], body: string): string {
-  let parts: string[] = [];
+  const parts: string[] = [];
   parts.push(...imports);
   parts.push(...declarations);
-  let resultName = createVirtualResultName(parts, body);
+  const resultName = createVirtualResultName(parts, body);
   parts.push(`let ${resultName} = await (async () => {`);
   parts.push(body);
   parts.push("})();");
@@ -675,7 +675,7 @@ function createVirtualModule(imports: string[], declarations: string[], body: st
 }
 
 function createVirtualResultName(parts: string[], body: string): string {
-  let source = `${parts.join("\n")}\n${body}`;
+  const source = `${parts.join("\n")}\n${body}`;
   let name = "__comptime_result";
   while (source.includes(name)) {
     name = `${name}_`;
@@ -688,17 +688,17 @@ function createVirtualId(id: string, index: number): string {
 }
 
 export function toDevID(originId: string, virtualId: string): string {
-  let index = readVirtualIndex(virtualId);
+  const index = readVirtualIndex(virtualId);
   return `${stripQuery(originId)}${EVALUATION_INDEX_MARKER}${index}`;
 }
 
 function readVirtualIndex(virtualId: string): number {
-  let marker = virtualId.lastIndexOf(EVALUATION_INDEX_MARKER);
+  const marker = virtualId.lastIndexOf(EVALUATION_INDEX_MARKER);
   if (marker === -1) {
     throw new Error(`Invalid comptime virtual id: ${virtualId}`);
   }
-  let rawIndex = virtualId.slice(marker + EVALUATION_INDEX_MARKER.length);
-  let index = Number(rawIndex);
+  const rawIndex = virtualId.slice(marker + EVALUATION_INDEX_MARKER.length);
+  const index = Number(rawIndex);
   if (!Number.isInteger(index) || index < 0) {
     throw new Error(`Invalid comptime virtual index: ${rawIndex}`);
   }
@@ -709,12 +709,12 @@ function createImportStatements(
   imports: Map<string, ImportBinding>,
   refs: Set<string>,
 ): { statements: string[]; watchFiles: string[] } {
-  let statements: string[] = [];
-  let watchFiles: string[] = [];
-  let seen = new Set<string>();
+  const statements: string[] = [];
+  const watchFiles: string[] = [];
+  const seen = new Set<string>();
 
-  for (let ref of refs) {
-    let binding = imports.get(ref);
+  for (const ref of refs) {
+    const binding = imports.get(ref);
     if (!binding || seen.has(binding.statement)) {
       continue;
     }
@@ -733,18 +733,18 @@ function collectTopLevelDeclarations(program: unknown, code: string): Declaratio
     return [];
   }
 
-  let body = readArray(program, "body");
-  let declarations: Declaration[] = [];
-  for (let item of body) {
+  const body = readArray(program, "body");
+  const declarations: Declaration[] = [];
+  for (const item of body) {
     if (!isAstNode(item) || item.type === "ImportDeclaration") {
       continue;
     }
-    let start = readOffset(item, "start");
-    let end = readOffset(item, "end");
+    const start = readOffset(item, "start");
+    const end = readOffset(item, "end");
     if (start === undefined || end === undefined) {
       continue;
     }
-    let names = collectStatementBindings(item);
+    const names = collectStatementBindings(item);
     if (names.size === 0) {
       continue;
     }
@@ -765,13 +765,13 @@ function createDeclarationStatements(
   callStart: number,
   callEnd: number,
 ): string[] {
-  let needed = new Set(initialRefs);
-  let included = new Set<Declaration>();
+  const needed = new Set(initialRefs);
+  const included = new Set<Declaration>();
   let changed = true;
 
   while (changed) {
     changed = false;
-    for (let declaration of declarations) {
+    for (const declaration of declarations) {
       if (included.has(declaration) || overlaps(declaration, callStart, callEnd)) {
         continue;
       }
@@ -779,7 +779,7 @@ function createDeclarationStatements(
         continue;
       }
       included.add(declaration);
-      for (let ref of declaration.refs) {
+      for (const ref of declaration.refs) {
         needed.add(ref);
       }
       changed = true;
@@ -796,7 +796,7 @@ function overlaps(declaration: Declaration, start: number, end: number): boolean
 }
 
 function setsIntersect(left: Set<string>, right: Set<string>): boolean {
-  for (let item of left) {
+  for (const item of left) {
     if (right.has(item)) {
       return true;
     }
@@ -805,8 +805,8 @@ function setsIntersect(left: Set<string>, right: Set<string>): boolean {
 }
 
 function collectIdentifierReferences(root: unknown): Set<string> {
-  let refs = new Set<string>();
-  let scopes: Array<Set<string>> = [new Set()];
+  const refs = new Set<string>();
+  const scopes: Array<Set<string>> = [new Set()];
   visitForReferences(root, scopes, refs);
   return refs;
 }
@@ -817,7 +817,7 @@ function visitForReferences(value: unknown, scopes: Array<Set<string>>, refs: Se
   }
 
   if (value.type === "Identifier") {
-    let name = readIdentifierName(value);
+    const name = readIdentifierName(value);
     if (name && !isDeclared(name, scopes)) {
       refs.add(name);
     }
@@ -832,7 +832,7 @@ function visitForReferences(value: unknown, scopes: Array<Set<string>>, refs: Se
   }
 
   if (value.type === "VariableDeclarator") {
-    let init = readNode(value, "init");
+    const init = readNode(value, "init");
     if (init) {
       visitForReferences(init, scopes, refs);
     }
@@ -844,9 +844,9 @@ function visitForReferences(value: unknown, scopes: Array<Set<string>>, refs: Se
     value.type === "FunctionExpression" ||
     value.type === "ArrowFunctionExpression"
   ) {
-    let scope = collectFunctionScope(value);
+    const scope = collectFunctionScope(value);
     scopes.push(scope);
-    let body = readNode(value, "body");
+    const body = readNode(value, "body");
     if (body) {
       visitForReferences(body, scopes, refs);
     }
@@ -855,8 +855,8 @@ function visitForReferences(value: unknown, scopes: Array<Set<string>>, refs: Se
   }
 
   if (value.type === "MemberExpression" || value.type === "OptionalMemberExpression") {
-    let object = readNode(value, "object");
-    let property = readNode(value, "property");
+    const object = readNode(value, "object");
+    const property = readNode(value, "property");
     if (object) {
       visitForReferences(object, scopes, refs);
     }
@@ -867,9 +867,9 @@ function visitForReferences(value: unknown, scopes: Array<Set<string>>, refs: Se
   }
 
   if (value.type === "Property" || value.type === "PropertyDefinition") {
-    let computed = readBoolean(value, "computed");
-    let key = readNode(value, "key");
-    let propertyValue = readNode(value, "value");
+    const computed = readBoolean(value, "computed");
+    const key = readNode(value, "key");
+    const propertyValue = readNode(value, "value");
     if (computed && key) {
       visitForReferences(key, scopes, refs);
     }
@@ -887,13 +887,13 @@ function visitForReferences(value: unknown, scopes: Array<Set<string>>, refs: Se
 }
 
 function collectDeclarationsInContainer(node: AstNode): Set<string> {
-  let names = new Set<string>();
-  let body = readArray(node, "body");
-  for (let item of body) {
+  const names = new Set<string>();
+  const body = readArray(node, "body");
+  for (const item of body) {
     if (!isAstNode(item)) {
       continue;
     }
-    for (let name of collectStatementBindings(item)) {
+    for (const name of collectStatementBindings(item)) {
       names.add(name);
     }
   }
@@ -901,24 +901,24 @@ function collectDeclarationsInContainer(node: AstNode): Set<string> {
 }
 
 function collectStatementBindings(node: AstNode): Set<string> {
-  let names = new Set<string>();
+  const names = new Set<string>();
 
   if (node.type === "VariableDeclaration") {
-    for (let declaration of readArray(node, "declarations")) {
+    for (const declaration of readArray(node, "declarations")) {
       if (isAstNode(declaration)) {
         collectPatternBindings(readNode(declaration, "id"), names);
       }
     }
   } else if (node.type === "FunctionDeclaration" || node.type === "ClassDeclaration") {
-    let id = readNode(node, "id");
-    let name = readIdentifierName(id);
+    const id = readNode(node, "id");
+    const name = readIdentifierName(id);
     if (name) {
       names.add(name);
     }
   } else if (node.type === "ExportNamedDeclaration" || node.type === "ExportDefaultDeclaration") {
-    let declaration = readNode(node, "declaration");
+    const declaration = readNode(node, "declaration");
     if (declaration) {
-      for (let name of collectStatementBindings(declaration)) {
+      for (const name of collectStatementBindings(declaration)) {
         names.add(name);
       }
     }
@@ -928,13 +928,13 @@ function collectStatementBindings(node: AstNode): Set<string> {
 }
 
 function collectFunctionScope(node: AstNode): Set<string> {
-  let names = new Set<string>();
-  for (let param of readArray(node, "params")) {
+  const names = new Set<string>();
+  for (const param of readArray(node, "params")) {
     collectPatternBindings(param, names);
   }
-  let body = readNode(node, "body");
+  const body = readNode(node, "body");
   if (body?.type === "BlockStatement") {
-    for (let name of collectDeclarationsInContainer(body)) {
+    for (const name of collectDeclarationsInContainer(body)) {
       names.add(name);
     }
   }
@@ -947,7 +947,7 @@ function collectPatternBindings(value: unknown, names: Set<string>): void {
   }
 
   if (value.type === "Identifier") {
-    let name = readIdentifierName(value);
+    const name = readIdentifierName(value);
     if (name) {
       names.add(name);
     }
@@ -968,7 +968,7 @@ function collectPatternBindings(value: unknown, names: Set<string>): void {
 }
 
 function isDeclared(name: string, scopes: Array<Set<string>>): boolean {
-  for (let scope of scopes) {
+  for (const scope of scopes) {
     if (scope.has(name)) {
       return true;
     }
@@ -977,7 +977,7 @@ function isDeclared(name: string, scopes: Array<Set<string>>): boolean {
 }
 
 function collectEnvReads(root: unknown): EnvReads {
-  let reads: EnvReads = { keys: new Set(), dynamic: false };
+  const reads: EnvReads = { keys: new Set(), dynamic: false };
   visitForEnv(root, reads);
   return reads;
 }
@@ -988,10 +988,10 @@ function visitForEnv(value: unknown, reads: EnvReads): void {
   }
 
   if (value.type === "MemberExpression" || value.type === "OptionalMemberExpression") {
-    let object = readNode(value, "object");
-    let property = readNode(value, "property");
+    const object = readNode(value, "object");
+    const property = readNode(value, "property");
     if (isProcessEnv(object)) {
-      let key = readEnvKey(value, property);
+      const key = readEnvKey(value, property);
       if (key === undefined) {
         reads.dynamic = true;
       } else {
@@ -1011,8 +1011,8 @@ function isProcessEnv(value: unknown): boolean {
   if (value.type !== "MemberExpression" && value.type !== "OptionalMemberExpression") {
     return false;
   }
-  let object = readNode(value, "object");
-  let property = readNode(value, "property");
+  const object = readNode(value, "object");
+  const property = readNode(value, "property");
   return readIdentifierName(object) === "process" && readIdentifierName(property) === "env";
 }
 
@@ -1024,7 +1024,7 @@ function readEnvKey(member: AstNode, property: AstNode | undefined): string | un
     return readIdentifierName(property);
   }
   if (property.type === "Literal") {
-    let value = property.value;
+    const value = property.value;
     return typeof value === "string" ? value : undefined;
   }
   return undefined;
@@ -1054,7 +1054,7 @@ function enforceEnvPolicy(
     return;
   }
 
-  for (let key of reads.keys) {
+  for (const key of reads.keys) {
     if (!options.env.includes(key)) {
       throw new ComptimeTransformError({
         message: `comptime body reads process.env.${key}, which is not allowed by env`,
@@ -1067,16 +1067,16 @@ function enforceEnvPolicy(
 }
 
 function createCacheKey(moduleBody: string, reads: EnvReads): string {
-  let hash = createHash("sha256");
+  const hash = createHash("sha256");
   hash.update(moduleBody);
   hash.update("\0env\0");
   if (reads.dynamic) {
-    let envEntries = Object.entries(process.env).sort(([left], [right]) =>
+    const envEntries = Object.entries(process.env).sort(([left], [right]) =>
       left.localeCompare(right),
     );
     hash.update(JSON.stringify(envEntries));
   } else {
-    let envEntries = Array.from(reads.keys)
+    const envEntries = Array.from(reads.keys)
       .sort()
       .map((key) => [key, process.env[key] ?? null]);
     hash.update(JSON.stringify(envEntries));
@@ -1085,7 +1085,7 @@ function createCacheKey(moduleBody: string, reads: EnvReads): string {
 }
 
 function serializeValue(value: unknown, options: NormalizedOptions): string {
-  for (let serializer of options.serializers) {
+  for (const serializer of options.serializers) {
     if (serializer.test(value)) {
       return serializer.serialize(value);
     }
@@ -1095,7 +1095,7 @@ function serializeValue(value: unknown, options: NormalizedOptions): string {
 
 async function withTimeout<T>(promise: Promise<T>, timeout: number): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
-  let timeoutPromise = new Promise<never>((_resolve, reject) => {
+  const timeoutPromise = new Promise<never>((_resolve, reject) => {
     timer = setTimeout(() => {
       reject(new Error(`comptime evaluation timed out after ${timeout}ms`));
     }, timeout);
@@ -1117,9 +1117,9 @@ function wrapEvaluationError(
   start: number,
   timeout: number,
 ): ComptimeTransformError {
-  let message = messageFrom(error);
+  const message = messageFrom(error);
   if (message === `comptime evaluation timed out after ${timeout}ms`) {
-    let wrapped = new ComptimeTransformError({
+    const wrapped = new ComptimeTransformError({
       message,
       id,
       code,
@@ -1129,7 +1129,7 @@ function wrapEvaluationError(
     appendCauseStackIfNeeded(wrapped, error);
     return wrapped;
   }
-  let wrapped = new ComptimeTransformError({
+  const wrapped = new ComptimeTransformError({
     message: `comptime evaluation threw: ${message}`,
     id,
     code,
@@ -1144,11 +1144,11 @@ function appendCauseStackIfNeeded(error: Error, cause: unknown): void {
   if (!shouldIncludeCauseStack(cause)) {
     return;
   }
-  let causeStack = stackFrom(cause);
+  const causeStack = stackFrom(cause);
   if (!causeStack) {
     return;
   }
-  let stack = typeof error.stack === "string" ? error.stack : `${error.name}: ${error.message}`;
+  const stack = typeof error.stack === "string" ? error.stack : `${error.name}: ${error.message}`;
   error.stack = `${stack}\nCaused by:\n${causeStack}`;
 }
 
@@ -1188,20 +1188,20 @@ function locate(code: string, file: string, start: number): SourceLocation {
 }
 
 function createFrame(code: string, line: number, column: number): string {
-  let lines = code.split("\n");
-  let source = lines[line - 1] ?? "";
+  const lines = code.split("\n");
+  const source = lines[line - 1] ?? "";
   return `${line} | ${source}\n${" ".repeat(String(line).length + 3 + column)}^`;
 }
 
 function visitChildren(node: AstNode, visit: (child: unknown) => void): void {
-  let keys = Object.keys(node);
-  for (let key of keys) {
+  const keys = Object.keys(node);
+  for (const key of keys) {
     if (SKIPPED_CHILD_KEYS.has(key) || key === "type" || key === "start" || key === "end") {
       continue;
     }
-    let value = node[key];
+    const value = node[key];
     if (Array.isArray(value)) {
-      for (let child of value) {
+      for (const child of value) {
         visit(child);
       }
     } else {
@@ -1211,7 +1211,7 @@ function visitChildren(node: AstNode, visit: (child: unknown) => void): void {
 }
 
 function readArray(node: AstNode, key: string): unknown[] {
-  let value = node[key];
+  const value = node[key];
   return Array.isArray(value) ? value : [];
 }
 
@@ -1219,7 +1219,7 @@ function readNode(node: AstNode | undefined, key: string): AstNode | undefined {
   if (!node) {
     return undefined;
   }
-  let value = node[key];
+  const value = node[key];
   return isAstNode(value) ? value : undefined;
 }
 
@@ -1227,12 +1227,12 @@ function readIdentifierName(node: unknown): string | undefined {
   if (!isAstNode(node) || node.type !== "Identifier") {
     return undefined;
   }
-  let name = node.name;
+  const name = node.name;
   return typeof name === "string" ? name : undefined;
 }
 
 function readOffset(node: AstNode, key: "start" | "end"): number | undefined {
-  let value = node[key];
+  const value = node[key];
   return typeof value === "number" ? value : undefined;
 }
 
@@ -1249,6 +1249,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function stripQuery(id: string): string {
-  let index = id.indexOf("?");
+  const index = id.indexOf("?");
   return index === -1 ? id : id.slice(0, index);
 }

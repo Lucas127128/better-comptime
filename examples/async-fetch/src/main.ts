@@ -6,7 +6,7 @@ type Payload = {
   total: number;
 };
 
-let payload = comptime<Payload>(async () => {
+const payload = comptime<Payload>(async () => {
   let response = await fetch(
     "data:application/json,%7B%22source%22%3A%22data-url%22%2C%22values%22%3A%5B3%2C5%2C8%2C13%5D%7D",
   );
@@ -31,7 +31,7 @@ let payload = comptime<Payload>(async () => {
   }
 });
 
-let target = document.querySelector("#payload");
+const target = document.querySelector("#payload");
 
 if (target) {
   target.textContent = JSON.stringify(payload, null, 2);

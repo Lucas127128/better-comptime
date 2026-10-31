@@ -1,6 +1,6 @@
 import { comptime } from "better-comptime";
 
-let html = comptime(async () => {
+const html = comptime(async () => {
   const { render } = await import("preact-render-to-string");
   const { Article } = await import("./Article");
 
@@ -15,7 +15,7 @@ let html = comptime(async () => {
     <Article details={details} eyebrow="comptime preact" title="Rendered before the bundle runs" />,
   );
 });
-let output = document.querySelector("#output");
+const output = document.querySelector("#output");
 
 if (output) {
   output.innerHTML = html;
