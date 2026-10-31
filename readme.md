@@ -6,7 +6,7 @@
 > A Zig-inspired build-time evaluation primitive, exposed as Vite and Rolldown plugins.
 
 ```ts
-import { comptime } from "comptime";
+import { comptime } from "better-comptime";
 import { fibonacci } from "./math";
 
 export const value = comptime(() => fibonacci(10));
@@ -26,17 +26,17 @@ If the plugin is not enabled, the runtime helper throws so missed transforms fai
 
 ```sh
 # via rolldown
-bun add --dev comptime rolldown
+bun add --dev better-comptime rolldown
 
 # via vite
-bun add --dev comptime vite
+bun add --dev better-comptime vite
 ```
 
 ## Vite
 
 ```ts
 import { defineConfig } from "vite";
-import { comptime } from "comptime/vite";
+import { comptime } from "better-comptime/vite";
 
 export default defineConfig({
   plugins: [comptime()],
@@ -47,7 +47,7 @@ export default defineConfig({
 
 ```ts
 import { defineConfig } from "rolldown";
-import { comptime } from "comptime/rolldown";
+import { comptime } from "better-comptime/rolldown";
 
 export default defineConfig({
   input: "src/app.ts",
@@ -58,7 +58,7 @@ export default defineConfig({
 ## API
 
 ```ts
-import { comptime } from "comptime";
+import { comptime } from "better-comptime";
 
 let value = comptime(() => expensivePureWork());
 ```
@@ -67,7 +67,7 @@ let value = comptime(() => expensivePureWork());
 
 Supported behavior:
 
-- Imported `comptime` bindings from `"comptime"`, including aliases.
+- Imported `comptime` bindings from `"better-comptime"`, including aliases.
 - Shadowed local bindings are ignored.
 - Referenced value imports are captured into virtual modules with absolute import paths.
 - Referenced top-level declarations from the origin module are copied into the virtual module.
