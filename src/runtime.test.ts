@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { comptime } from "./runtime";
 
-describe("runtime stub", () => {
+describe.concurrent("runtime stub", () => {
   test("throws when the plugin did not replace a comptime call", () => {
     expect(() => comptime(() => 1)).toThrow("Missing comptime() plugin");
   });

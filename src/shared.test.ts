@@ -35,7 +35,7 @@ function createCoreWithEvaluator(
   return core;
 }
 
-describe("shared transform core", () => {
+describe.concurrent("shared transform core", () => {
   test("replaces imported comptime calls with serialized values", async () => {
     let bodies: string[] = [];
     let core = createCoreWithEvaluator(3, bodies);

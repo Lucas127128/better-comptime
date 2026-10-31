@@ -25,7 +25,7 @@ let viteSerializer: ViteSerializer = {
 
 let rolldownSerializer: RolldownSerializer = viteSerializer;
 
-describe("plugin adapters", () => {
+describe.concurrent("plugin adapters", () => {
   test("plugin entrypoints export serializer types", () => {
     expect(viteSerializer.test(new URL("https://example.com"))).toBe(true);
     expect(rolldownSerializer.serialize(new URL("https://example.com"))).toBe(
