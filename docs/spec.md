@@ -258,22 +258,27 @@ const literal = uneval(value); // e.g. "new Map([['a',1]])"
 
 ## 8. Replacement & source maps
 
-Use **`magic-string`** to apply edits:
+Use Rolldown's native MagicString when the transform hook provides `meta.magicString`, and fall back to the JavaScript **`magic-string`** package (v1) otherwise. Returning the native instance as `code` lets Rolldown generate the source map in its native pipeline; the JavaScript implementation returns its own `SourceMap` directly.
 
 ```ts
-import MagicString from "magic-string";
+import { MagicString } from "magic-string";
 
-const s = new MagicString(originalCode);
+const s = meta?.magicString ?? new MagicString(originalCode);
 for (const call of calls) {
   s.overwrite(call.start, call.end, serialize(call.value));
 }
-return {
-  code: s.toString(),
-  map: s.generateMap({ hires: true, source: id }),
-};
+
+if (s instanceof MagicString) {
+  return {
+    code: s.toString(),
+    map: s.generateMap({ hires: true, source: id }),
+  };
+}
+
+return { code: s };
 ```
 
-`hires: true` keeps debugger stepping accurate. The replaced expression is shorter than the original `comptime(() => ...)` call, so source positions after each replacement shift; magic-string handles this automatically.
+`hires: true` keeps debugger stepping accurate. The replaced expression is shorter than the original `comptime(() => ...)` call, so source positions after each replacement shift; MagicString handles this automatically. The fallback ensures the plugin works with Vite and with Rolldown builds that don't enable `experimental.nativeMagicString`.
 
 ## 9. Caching & invalidation
 

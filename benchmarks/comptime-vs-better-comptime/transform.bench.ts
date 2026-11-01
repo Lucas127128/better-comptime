@@ -18,6 +18,13 @@ describe.concurrent("comptime vs better-comptime", async () => {
     plugins: [comptime()],
     server: { port: 0 },
     logLevel: "silent",
+    build: {
+      rolldownOptions: {
+        experimental: {
+          nativeMagicString: true,
+        },
+      },
+    },
   });
 
   const betterComptimeServer = await createServer({
@@ -25,6 +32,13 @@ describe.concurrent("comptime vs better-comptime", async () => {
     plugins: [betterComptime()],
     server: { port: 0 },
     logLevel: "silent",
+    build: {
+      rolldownOptions: {
+        experimental: {
+          nativeMagicString: true,
+        },
+      },
+    },
   });
 
   const cheapBody = `() => Math.random() + Math.random()`;

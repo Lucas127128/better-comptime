@@ -2,7 +2,8 @@ import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { dirname, extname, isAbsolute, resolve } from "node:path";
 import { uneval } from "devalue";
-import MagicString, { type SourceMap } from "magic-string";
+import { MagicString, type SourceMap } from "magic-string";
+import type { RolldownMagicString } from "rolldown";
 import { parseSync } from "rolldown/utils";
 
 const DEFAULT_TIMEOUT = 10_000;
@@ -49,8 +50,8 @@ export type Options = {
 };
 
 type TransformResult = {
-  code: string;
-  map: SourceMap;
+  code: string | RolldownMagicString;
+  map?: SourceMap;
 };
 
 type TransformContext = {
@@ -61,7 +62,12 @@ type TransformContext = {
 export type ComptimeCore = {
   resolveId(id: string): string | null;
   load(id: string): string | null;
-  transform(code: string, id: string, context?: TransformContext): Promise<TransformResult | null>;
+  transform(
+    code: string,
+    id: string,
+    context?: TransformContext,
+    magicString?: RolldownMagicString,
+  ): Promise<TransformResult | null>;
   invalidate(id?: string): void;
 };
 
@@ -194,7 +200,7 @@ export function createCore(input: CreateCoreOptions): ComptimeCore {
       return virtualModules.get(id) ?? null;
     },
 
-    async transform(code, id, context) {
+    async transform(code, id, context, magicString) {
       if (!shouldScan(id, code, options)) {
         return null;
       }
@@ -226,7 +232,7 @@ export function createCore(input: CreateCoreOptions): ComptimeCore {
 
       const imports = collectImportBindings(parseResult.module.staticImports, id, comptimeBindings);
       const declarations = collectTopLevelDeclarations(parseResult.program, code);
-      const edited = new MagicString(code);
+      const edited = magicString ?? new MagicString(code);
 
       for (const call of calls) {
         const fnInfo = getFunctionInfo(call.fn, code, id);
@@ -314,10 +320,14 @@ export function createCore(input: CreateCoreOptions): ComptimeCore {
         edited.overwrite(call.start, call.end, literal);
       }
 
-      return {
-        code: edited.toString(),
-        map: edited.generateMap({ hires: true, source: id }),
-      };
+      if (edited instanceof MagicString) {
+        return {
+          code: edited.toString(),
+          map: edited.generateMap({ hires: true, source: id }),
+        };
+      }
+
+      return { code: edited };
     },
 
     invalidate() {

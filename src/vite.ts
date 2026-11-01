@@ -80,7 +80,7 @@ export function comptime(options?: Options): Plugin {
     load(id) {
       return core.load(id);
     },
-    async transform(code, id) {
+    async transform(code, id, meta) {
       evaluator?.setHost({
         resolve: async (source, importer) => {
           const resolved = await this.resolve(source, importer);
@@ -98,14 +98,20 @@ export function comptime(options?: Options): Plugin {
       });
 
       try {
-        const result = await core.transform(code, id, {
-          addWatchFile: this.addWatchFile.bind(this),
-          resolve: async (source, importer) => {
-            const resolved = await this.resolve(source, importer);
-            if (!resolved || resolved.external) return null;
-            return resolved.id;
+        const result = await core.transform(
+          code,
+          id,
+          {
+            addWatchFile: this.addWatchFile.bind(this),
+            resolve: async (source, importer) => {
+              const resolved = await this.resolve(source, importer);
+              if (!resolved || resolved.external) return null;
+              return resolved.id;
+            },
           },
-        });
+          // @ts-expect-error
+          meta?.magicString,
+        );
         return result ?? undefined;
       } finally {
         evaluator?.setHost(undefined);
