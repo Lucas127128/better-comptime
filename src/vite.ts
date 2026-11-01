@@ -1,7 +1,7 @@
 import { createCore, includeEvaluationCauseStack, toDevID } from "./shared";
 import { ModuleRunnerEvaluator, readDefaultExport } from "./evaluator";
 
-import type { Plugin, ViteDevServer } from "vite";
+import type { Plugin, Rolldown, ViteDevServer } from "vite";
 import type { Options, Evaluator } from "./shared";
 import type { EvaluatorHost } from "./evaluator";
 
@@ -112,7 +112,9 @@ export function comptime(options?: Options): Plugin {
           // @ts-expect-error
           meta?.magicString,
         );
-        return result ?? undefined;
+        // magic-string's SourceMap class models optional fields as `undefined`, which Rolldown's
+        // SourceMapInput rejects under exactOptionalPropertyTypes. The map is valid at runtime.
+        return result as Rolldown.TransformResult | null;
       } finally {
         evaluator?.setHost(undefined);
       }
