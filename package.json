@@ -1,6 +1,6 @@
 {
   "name": "better-comptime",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "A Zig-inspired build-time evaluation primitive, exposed as Vite and Rolldown plugins.",
   "keywords": [
     "build-time",
