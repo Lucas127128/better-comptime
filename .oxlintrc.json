@@ -8,7 +8,8 @@
     "typescript/no-unnecessary-condition": "error",
     "typescript/await-thenable": "error",
     "typescript/consistent-return": "error",
-    "prefer-const": "error"
+    "prefer-const": "error",
+    "no-unused-vars": "error"
   },
   "env": {
     "builtin": true

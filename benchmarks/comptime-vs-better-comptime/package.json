@@ -2,10 +2,11 @@
   "name": "comptime-vs-better-comptime",
   "type": "module",
   "scripts": {
-    "gen": "bun run gen.ts"
+    "gen": "bun run gen.ts",
+    "bench": "vitest bench"
   },
   "dependencies": {
-    "better-comptime": "0.1.2",
+    "better-comptime": "file:../..",
     "comptime": "0.1.0"
   },
   "devDependencies": {

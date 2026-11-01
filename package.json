@@ -49,7 +49,8 @@
     "prepack": "bun run build",
     "test": "bun test src/*.test.ts",
     "release": "bumpp",
-    "lint": "oxlint --type-aware"
+    "lint": "oxlint --type-aware",
+    "bench": "bun --cwd benchmarks/comptime-vs-better-comptime bench"
   },
   "dependencies": {
     "devalue": "^5.8.1",
@@ -58,6 +59,7 @@
   "devDependencies": {
     "bumpp": "^12.3.0",
     "bun-types": "1.3.13",
+    "knip": "^6.44.1",
     "oxfmt": "^0.48.0",
     "oxlint": "^1.90.0",
     "oxlint-tsgolint": "^7.0.2005",

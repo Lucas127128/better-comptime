@@ -34,7 +34,9 @@ class ViteEvaluator implements Evaluator {
           await server.ssrLoadModule(viteVirtualId, { fixStacktrace: true }),
         );
       } catch (error) {
-        includeEvaluationCauseStack(error);
+        if (error instanceof Error) {
+          includeEvaluationCauseStack(error);
+        }
         throw error;
       }
     }

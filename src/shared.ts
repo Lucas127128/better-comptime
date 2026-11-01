@@ -48,12 +48,12 @@ export type Options = {
   serializers?: Serializer[];
 };
 
-export type TransformResult = {
+type TransformResult = {
   code: string;
   map: SourceMap;
 };
 
-export type TransformContext = {
+type TransformContext = {
   addWatchFile?(id: string): void;
   resolve?(id: string, importer: string): Promise<string | null>;
 };
@@ -97,13 +97,20 @@ export class ComptimeTransformError extends Error {
     this.loc = locate(input.code, input.id, input.start);
     this.frame = createFrame(input.code, this.loc.line, this.loc.column);
     this.cause = input.cause;
+    if (
+      input.cause instanceof Error &&
+      EVALUATION_CAUSE_STACKS.has(input.cause) &&
+      input.cause.stack
+    ) {
+      this.stack = `${this.stack}\nCaused by: ${input.cause.stack}`;
+    }
   }
 }
 
-export function includeEvaluationCauseStack(error: unknown): void {
-  if (isRecord(error)) {
-    EVALUATION_CAUSE_STACKS.add(error);
-  }
+class ComptimeEvaluationTimeoutError extends Error {}
+
+export function includeEvaluationCauseStack(error: Error) {
+  EVALUATION_CAUSE_STACKS.add(error);
 }
 
 type AstNode = {
@@ -269,7 +276,25 @@ export function createCore(input: CreateCoreOptions): ComptimeCore {
               options.timeout,
             );
           } catch (error) {
-            throw wrapEvaluationError(error, code, id, call.start, options.timeout);
+            if (error instanceof Error) {
+              throw new ComptimeTransformError({
+                message:
+                  error instanceof ComptimeEvaluationTimeoutError
+                    ? error.message
+                    : `comptime evaluation threw: ${error.message}`,
+                id,
+                code,
+                start: call.start,
+                cause: error,
+              });
+            } else {
+              throw new ComptimeTransformError({
+                message: `comptime evaluation threw: ${String(error)}`,
+                id,
+                code,
+                start: call.start,
+              });
+            }
           }
 
           try {
@@ -860,14 +885,14 @@ function visitForReferences(value: unknown, scopes: Array<Set<string>>, refs: Se
     if (object) {
       visitForReferences(object, scopes, refs);
     }
-    if (readBoolean(value, "computed") && property) {
+    if (value["computed"] && property) {
       visitForReferences(property, scopes, refs);
     }
     return;
   }
 
   if (value.type === "Property" || value.type === "PropertyDefinition") {
-    const computed = readBoolean(value, "computed");
+    const computed = value["computed"];
     const key = readNode(value, "key");
     const propertyValue = readNode(value, "value");
     if (computed && key) {
@@ -1020,7 +1045,7 @@ function readEnvKey(member: AstNode, property: AstNode | undefined): string | un
   if (!property) {
     return undefined;
   }
-  if (!readBoolean(member, "computed")) {
+  if (!member["computed"]) {
     return readIdentifierName(property);
   }
   if (property.type === "Literal") {
@@ -1097,7 +1122,9 @@ async function withTimeout<T>(promise: Promise<T>, timeout: number): Promise<T> 
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeoutPromise = new Promise<never>((_resolve, reject) => {
     timer = setTimeout(() => {
-      reject(new Error(`comptime evaluation timed out after ${timeout}ms`));
+      reject(
+        new ComptimeEvaluationTimeoutError(`comptime evaluation timed out after ${timeout}ms`),
+      );
     }, timeout);
   });
 
@@ -1108,62 +1135,6 @@ async function withTimeout<T>(promise: Promise<T>, timeout: number): Promise<T> 
       clearTimeout(timer);
     }
   }
-}
-
-function wrapEvaluationError(
-  error: unknown,
-  code: string,
-  id: string,
-  start: number,
-  timeout: number,
-): ComptimeTransformError {
-  const message = messageFrom(error);
-  if (message === `comptime evaluation timed out after ${timeout}ms`) {
-    const wrapped = new ComptimeTransformError({
-      message,
-      id,
-      code,
-      start,
-      cause: error,
-    });
-    appendCauseStackIfNeeded(wrapped, error);
-    return wrapped;
-  }
-  const wrapped = new ComptimeTransformError({
-    message: `comptime evaluation threw: ${message}`,
-    id,
-    code,
-    start,
-    cause: error,
-  });
-  appendCauseStackIfNeeded(wrapped, error);
-  return wrapped;
-}
-
-function appendCauseStackIfNeeded(error: Error, cause: unknown): void {
-  if (!shouldIncludeCauseStack(cause)) {
-    return;
-  }
-  const causeStack = stackFrom(cause);
-  if (!causeStack) {
-    return;
-  }
-  const stack = typeof error.stack === "string" ? error.stack : `${error.name}: ${error.message}`;
-  error.stack = `${stack}\nCaused by:\n${causeStack}`;
-}
-
-function shouldIncludeCauseStack(error: unknown): boolean {
-  return isRecord(error) && EVALUATION_CAUSE_STACKS.has(error);
-}
-
-function stackFrom(error: unknown): string | undefined {
-  if (error instanceof Error && typeof error.stack === "string") {
-    return error.stack;
-  }
-  if (isRecord(error) && typeof error.stack === "string") {
-    return error.stack;
-  }
-  return undefined;
 }
 
 function messageFrom(error: unknown): string {
@@ -1234,10 +1205,6 @@ function readIdentifierName(node: unknown): string | undefined {
 function readOffset(node: AstNode, key: "start" | "end"): number | undefined {
   const value = node[key];
   return typeof value === "number" ? value : undefined;
-}
-
-function readBoolean(node: AstNode, key: string): boolean {
-  return node[key] === true;
 }
 
 function isAstNode(value: unknown): value is AstNode {

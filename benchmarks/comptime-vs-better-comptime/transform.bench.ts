@@ -31,7 +31,7 @@ describe.concurrent("comptime vs better-comptime", async () => {
   const mediumBody = `() => Math.random() * 150 + Math.sin(Date.now())`;
   const expensiveBody = `() => {
     let a = 0, b = 1;
-    for (let i = 0; i < 50; i++) [a, b] = [b, a + b];
+    for (let i = 0; i < 50; i++) [a, b] = [b * 2 + a, a + b];
     return a;
   }`;
 
@@ -59,7 +59,7 @@ describe.concurrent("comptime vs better-comptime", async () => {
       }),
     );
   });
-  test("transform + eval (cheap)", async ({ bench }) => {
+  test("transform + eval (medium)", async ({ bench }) => {
     await bench.compare(
       bench("comptime", async () => {
         await runTransformEval(comptimeServer, mediumBody);
@@ -69,7 +69,7 @@ describe.concurrent("comptime vs better-comptime", async () => {
       }),
     );
   });
-  test("transform + eval (cheap)", async ({ bench }) => {
+  test("transform + eval (expensive)", async ({ bench }) => {
     await bench.compare(
       bench("comptime", async () => {
         await runTransformEval(comptimeServer, expensiveBody);

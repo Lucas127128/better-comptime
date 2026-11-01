@@ -24,7 +24,7 @@ export type EvaluatorHost = {
   load(id: string): Promise<string | null>;
 };
 
-export type HostResolved = {
+type HostResolved = {
   id: string;
   external: boolean;
 };
@@ -39,11 +39,6 @@ type FetchModuleResult =
       url: string;
       invalidate: boolean;
     };
-
-type InvokeRequest = {
-  name: string;
-  data: unknown[];
-};
 
 type InvokeResult = { result: unknown } | { error: SerializableError };
 
@@ -85,17 +80,17 @@ export class ModuleRunnerEvaluator implements Evaluator {
     );
   }
 
-  setHost(host: EvaluatorHost | undefined): void {
+  setHost(host: EvaluatorHost | undefined) {
     this.#host = host;
   }
 
-  async evaluate(virtualId: string): Promise<unknown> {
+  async evaluate(virtualId: string) {
     this.#invalidate(virtualId);
     const module = await this.#runner.import(virtualId);
     return readDefaultExport(module);
   }
 
-  async dispose(): Promise<void> {
+  async dispose() {
     if (!this.#runner.isClosed()) {
       await this.#runner.close();
     }
@@ -260,7 +255,7 @@ function createTransformFilename(id: string, cwd: string): string {
   return id.startsWith("\0") ? resolve(cwd, `${sanitizeVirtualId(id)}.ts`) : id;
 }
 
-function parseInvokeRequest(payload: unknown): InvokeRequest {
+function parseInvokeRequest(payload: unknown) {
   if (!isRecord(payload)) {
     throw new Error("ModuleRunner invoke payload must be an object");
   }
@@ -276,7 +271,7 @@ function parseInvokeRequest(payload: unknown): InvokeRequest {
   return { name, data: Array.isArray(args) ? args : [] };
 }
 
-function resolveExistingPath(path: string): string {
+function resolveExistingPath(path: string) {
   if (existsSync(path)) {
     return path;
   }
@@ -299,7 +294,7 @@ function resolveExistingPath(path: string): string {
   throw new Error(`comptime body imports '${path}' which could not be resolved`);
 }
 
-function resolveExternal(id: string, importer: string | undefined, cwd: string): string {
+function resolveExternal(id: string, importer: string | undefined, cwd: string) {
   if (!isBareSpecifier(id)) {
     return id;
   }
@@ -318,14 +313,14 @@ function resolveImporterBase(importer: string | undefined, cwd: string): string 
   return importer.startsWith("\0") ? cwd : dirname(importer);
 }
 
-function toHostImporter(importer: string | undefined): string | undefined {
+function toHostImporter(importer: string | undefined) {
   if (!importer) {
     return undefined;
   }
   return readEvaluationPath(importer) ?? importer;
 }
 
-function readEvaluationPath(id: string): string | undefined {
+function readEvaluationPath(id: string) {
   const prefix = id.indexOf(EVALUATION_VIRTUAL_PREFIX);
   if (prefix === -1) {
     return undefined;
@@ -333,7 +328,7 @@ function readEvaluationPath(id: string): string | undefined {
   return stripEvaluationQuery(id.slice(prefix + EVALUATION_VIRTUAL_PREFIX.length));
 }
 
-function stripEvaluationQuery(id: string): string {
+function stripEvaluationQuery(id: string) {
   const marker = id.lastIndexOf(EVALUATION_INDEX_MARKER);
   return marker === -1 ? id : id.slice(0, marker);
 }
@@ -352,7 +347,7 @@ function inferLang(id: string): "js" | "jsx" | "ts" | "tsx" {
   return "js";
 }
 
-function sanitizeVirtualId(id: string): string {
+function sanitizeVirtualId(id: string) {
   return id.replaceAll(/[^A-Za-z0-9_]+/g, "_");
 }
 
@@ -362,7 +357,7 @@ function isBareSpecifier(id: string): boolean {
   );
 }
 
-function isBuiltin(id: string): boolean {
+function isBuiltin(id: string) {
   const name = id.startsWith("node:") ? id.slice(5) : id;
   return builtinModules.includes(name);
 }
@@ -376,7 +371,7 @@ function builtinIds(): string[] {
   return ids;
 }
 
-function serializeError(error: unknown): SerializableError {
+function serializeError(error: unknown) {
   if (error instanceof Error) {
     const serialized: SerializableError = {
       message: error.message,
