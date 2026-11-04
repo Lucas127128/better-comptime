@@ -8,6 +8,6 @@ if (target instanceof HTMLElement) {
   target.textContent = message;
 }
 
-function readReleaseManifest(): string {
+function readReleaseManifest() {
   throw new Error("missing RELEASE_MANIFEST_PATH for errors example");
 }

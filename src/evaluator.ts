@@ -29,19 +29,6 @@ type HostResolved = {
   external: boolean;
 };
 
-type FetchModuleResult =
-  | { cache: true }
-  | { externalize: string; type: "module" | "commonjs" | "builtin" | "network" }
-  | {
-      code: string;
-      file: string | null;
-      id: string;
-      url: string;
-      invalidate: boolean;
-    };
-
-type InvokeResult = { result: unknown } | { error: SerializableError };
-
 type SerializableError = {
   message: string;
   name?: string;
@@ -67,7 +54,7 @@ export class ModuleRunnerEvaluator implements Evaluator {
         hmr: false,
         sourcemapInterceptor: "prepareStackTrace",
         transport: {
-          invoke: async (payload: unknown): Promise<InvokeResult> => {
+          invoke: async (payload: unknown) => {
             try {
               return { result: await this.#handleInvoke(payload) };
             } catch (error) {
@@ -96,7 +83,7 @@ export class ModuleRunnerEvaluator implements Evaluator {
     }
   }
 
-  async #handleInvoke(payload: unknown): Promise<unknown> {
+  async #handleInvoke(payload: unknown) {
     const request = parseInvokeRequest(payload);
     if (request.name === "getBuiltins") {
       return builtinIds();
@@ -107,7 +94,7 @@ export class ModuleRunnerEvaluator implements Evaluator {
     throw new Error(`Unsupported ModuleRunner invoke: ${request.name}`);
   }
 
-  async #fetchModule(args: unknown[]): Promise<FetchModuleResult> {
+  async #fetchModule(args: unknown[]) {
     const id = typeof args[0] === "string" ? args[0] : undefined;
     const importer = typeof args[1] === "string" ? args[1] : undefined;
     const cached = isRecord(args[2]) && args[2].cached === true;
@@ -146,7 +133,7 @@ export class ModuleRunnerEvaluator implements Evaluator {
     return await this.#transform(loaded);
   }
 
-  async #transform(loaded: LoadedModule): Promise<FetchModuleResult> {
+  async #transform(loaded: LoadedModule) {
     const transformed = await transformForModuleRunner(loaded.id, loaded.code, this.#cwd);
 
     return {
@@ -158,7 +145,7 @@ export class ModuleRunnerEvaluator implements Evaluator {
     };
   }
 
-  async #loadModule(id: string, importer: string | undefined): Promise<LoadedModule> {
+  async #loadModule(id: string, importer: string | undefined) {
     const virtual = this.#core.resolveId(id);
     if (virtual) {
       const code = this.#core.load(virtual);
@@ -171,7 +158,7 @@ export class ModuleRunnerEvaluator implements Evaluator {
     return await this.#loadResolvedModule(resolved);
   }
 
-  async #loadResolvedModule(resolved: string): Promise<LoadedModule> {
+  async #loadResolvedModule(resolved: string) {
     const virtual = this.#core.resolveId(resolved);
     if (virtual) {
       const code = this.#core.load(virtual);
@@ -184,14 +171,14 @@ export class ModuleRunnerEvaluator implements Evaluator {
     return { id: resolved, code: await readFile(resolved, "utf8") };
   }
 
-  #invalidate(id: string): void {
+  #invalidate(id: string) {
     const module = this.#runner.evaluatedModules.getModuleById(id);
     if (module) {
       this.#invalidateModule(module, new Set());
     }
   }
 
-  #invalidateModule(module: EvaluatedModuleNode, seen: Set<string>): void {
+  #invalidateModule(module: EvaluatedModuleNode, seen: Set<string>) {
     if (seen.has(module.id)) {
       return;
     }
@@ -205,7 +192,7 @@ export class ModuleRunnerEvaluator implements Evaluator {
     this.#runner.evaluatedModules.invalidateModule(module);
   }
 
-  #resolve(id: string, importer: string | undefined): string {
+  #resolve(id: string, importer: string | undefined) {
     const evaluationPath = readEvaluationPath(id);
     if (evaluationPath) {
       return resolveExistingPath(evaluationPath);
@@ -220,14 +207,14 @@ export class ModuleRunnerEvaluator implements Evaluator {
   }
 }
 
-export function readDefaultExport(module: unknown): unknown {
+export function readDefaultExport(module: unknown) {
   if (!isRecord(module) || !("default" in module)) {
     throw new Error("comptime virtual module did not export a default value");
   }
   return module.default;
 }
 
-async function transformForModuleRunner(id: string, source: string, cwd: string): Promise<string> {
+async function transformForModuleRunner(id: string, source: string, cwd: string) {
   const filename = createTransformFilename(id, cwd);
   const stripped = await transform(filename, source, {
     cwd,
@@ -246,7 +233,7 @@ async function transformForModuleRunner(id: string, source: string, cwd: string)
   return transformed.code;
 }
 
-function createTransformFilename(id: string, cwd: string): string {
+function createTransformFilename(id: string, cwd: string) {
   const evaluationPath = readEvaluationPath(id);
   if (evaluationPath) {
     const extension = extname(evaluationPath) || ".ts";
@@ -302,7 +289,7 @@ function resolveExternal(id: string, importer: string | undefined, cwd: string) 
   return createRequire(resolve(base, "comptime-evaluator.js")).resolve(id);
 }
 
-function resolveImporterBase(importer: string | undefined, cwd: string): string {
+function resolveImporterBase(importer: string | undefined, cwd: string) {
   if (!importer) {
     return cwd;
   }
@@ -333,7 +320,7 @@ function stripEvaluationQuery(id: string) {
   return marker === -1 ? id : id.slice(0, marker);
 }
 
-function inferLang(id: string): "js" | "jsx" | "ts" | "tsx" {
+function inferLang(id: string) {
   const extension = extname(id);
   if (extension === ".tsx") {
     return "tsx";
@@ -351,7 +338,7 @@ function sanitizeVirtualId(id: string) {
   return id.replaceAll(/[^A-Za-z0-9_]+/g, "_");
 }
 
-function isBareSpecifier(id: string): boolean {
+function isBareSpecifier(id: string) {
   return (
     !id.startsWith("\0") && !id.startsWith(".") && !id.startsWith("/") && !id.startsWith("file:")
   );
@@ -362,7 +349,7 @@ function isBuiltin(id: string) {
   return builtinModules.includes(name);
 }
 
-function builtinIds(): string[] {
+function builtinIds() {
   const ids: string[] = [];
   for (const module of builtinModules) {
     ids.push(module);

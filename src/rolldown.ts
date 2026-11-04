@@ -2,20 +2,20 @@ import { createCore } from "./shared";
 import { ModuleRunnerEvaluator } from "./evaluator";
 
 import type { Plugin } from "rolldown";
-import type { Options, Evaluator } from "./shared";
+import type { Options } from "./shared";
 
 export type { Serializer } from "./shared";
 
-export function comptime(options?: Options): Plugin {
+export function comptime(options?: Options) {
   let evaluator: ModuleRunnerEvaluator | undefined;
   const core = createCore({ getEvaluator, options });
 
-  function getEvaluator(): Evaluator {
+  function getEvaluator() {
     if (evaluator) return evaluator;
     throw new Error("comptime evaluator was used before buildStart");
   }
 
-  return {
+  const plugin: Plugin = {
     name: "comptime",
     buildStart() {
       evaluator = new ModuleRunnerEvaluator({ core });
@@ -54,7 +54,7 @@ export function comptime(options?: Options): Plugin {
               return resolved.id;
             },
           },
-          meta?.magicString,
+          meta.magicString,
         );
         return result ?? undefined;
       } finally {
@@ -68,4 +68,6 @@ export function comptime(options?: Options): Plugin {
       await evaluator?.dispose();
     },
   };
+
+  return plugin;
 }

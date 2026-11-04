@@ -10,11 +10,7 @@ class AssetRef {
   }
 }
 
-function createCoreWithEvaluator(
-  value: unknown,
-  bodies: string[],
-  options?: Options,
-): ComptimeCore {
+function createCoreWithEvaluator(value: unknown, bodies: string[], options?: Options) {
   let core: ComptimeCore | undefined;
   const evaluator: Evaluator = {
     async evaluate(virtualId) {

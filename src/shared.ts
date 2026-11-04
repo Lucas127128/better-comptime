@@ -180,12 +180,12 @@ type Declaration = {
   end: number;
 };
 
-export function createCore(input: CreateCoreOptions): ComptimeCore {
+export function createCore(input: CreateCoreOptions) {
   const options = normalizeOptions(input.options);
   const virtualModules = new Map<string, string>();
   const cache = new Map<string, string>();
 
-  return {
+  const core: ComptimeCore = {
     resolveId(id) {
       if (id === PACKAGE_NAME) {
         return RUNTIME_VIRTUAL_ID;
@@ -334,9 +334,11 @@ export function createCore(input: CreateCoreOptions): ComptimeCore {
       cache.clear();
     },
   };
+
+  return core;
 }
 
-function normalizeOptions(options: Options | undefined): NormalizedOptions {
+function normalizeOptions(options: Options | undefined) {
   return {
     include: normalizePatterns(options?.include),
     exclude: normalizePatterns(options?.exclude),
@@ -346,14 +348,14 @@ function normalizeOptions(options: Options | undefined): NormalizedOptions {
   };
 }
 
-function normalizePatterns(value: string | string[] | undefined): string[] | undefined {
+function normalizePatterns(value: string | string[] | undefined) {
   if (value === undefined) {
     return undefined;
   }
   return Array.isArray(value) ? value : [value];
 }
 
-function shouldScan(id: string, code: string, options: NormalizedOptions): boolean {
+function shouldScan(id: string, code: string, options: NormalizedOptions) {
   if (id.startsWith(EVALUATION_VIRTUAL_PREFIX) || id.includes(EVALUATION_INDEX_MARKER)) {
     return false;
   }
@@ -378,11 +380,11 @@ function shouldScan(id: string, code: string, options: NormalizedOptions): boole
   return true;
 }
 
-function matchesAny(value: string, patterns: string[]): boolean {
+function matchesAny(value: string, patterns: string[]) {
   return patterns.some((pattern) => matchesPattern(value, pattern));
 }
 
-function matchesPattern(value: string, pattern: string): boolean {
+function matchesPattern(value: string, pattern: string) {
   if (!pattern.includes("*")) {
     return value.includes(pattern);
   }
@@ -405,7 +407,7 @@ function matchesPattern(value: string, pattern: string): boolean {
   return new RegExp(`^${escaped}$`).test(value);
 }
 
-function collectComptimeBindings(imports: StaticImportLike[]): Set<string> {
+function collectComptimeBindings(imports: StaticImportLike[]) {
   const names = new Set<string>();
   for (const item of imports) {
     if (item.moduleRequest.value !== PACKAGE_NAME) {
@@ -427,7 +429,7 @@ function collectImportBindings(
   imports: StaticImportLike[],
   origin: string,
   comptimeBindings: Set<string>,
-): Map<string, ImportBinding> {
+) {
   const result = new Map<string, ImportBinding>();
   for (const item of imports) {
     if (item.moduleRequest.value === PACKAGE_NAME) {
@@ -449,7 +451,7 @@ function collectImportBindings(
   return result;
 }
 
-function createImportStatement(entry: StaticImportEntryLike, moduleRequest: string): string {
+function createImportStatement(entry: StaticImportEntryLike, moduleRequest: string) {
   let specifier: string;
   if (entry.importName.kind === "Default") {
     specifier = entry.localName.value;
@@ -465,7 +467,7 @@ function createImportStatement(entry: StaticImportEntryLike, moduleRequest: stri
   return `import ${specifier} from ${JSON.stringify(moduleRequest)};`;
 }
 
-function resolveImport(specifier: string, origin: string): string {
+function resolveImport(specifier: string, origin: string) {
   if (specifier.startsWith(".") || specifier.startsWith("/")) {
     const base = dirname(stripQuery(origin));
     return isAbsolute(specifier) ? specifier : resolve(base, specifier);
@@ -476,7 +478,7 @@ function resolveImport(specifier: string, origin: string): string {
   return specifier;
 }
 
-function findComptimeCalls(program: unknown, importedNames: Set<string>): RawCall[] {
+function findComptimeCalls(program: unknown, importedNames: Set<string>) {
   const calls: RawCall[] = [];
   const scopes: Array<Set<string>> = [new Set()];
   visitForCalls(program, importedNames, scopes, calls);
@@ -491,7 +493,7 @@ function visitForCalls(
   importedNames: Set<string>,
   scopes: Array<Set<string>>,
   calls: RawCall[],
-): void {
+) {
   if (!isAstNode(value) || value.type.startsWith("TS")) {
     return;
   }
@@ -551,14 +553,14 @@ function visitFunctionChildrenForCalls(
   importedNames: Set<string>,
   scopes: Array<Set<string>>,
   calls: RawCall[],
-): void {
+) {
   const body = readNode(node, "body");
   if (body) {
     visitForCalls(body, importedNames, scopes, calls);
   }
 }
 
-function isShadowed(name: string, scopes: Array<Set<string>>): boolean {
+function isShadowed(name: string, scopes: Array<Set<string>>) {
   for (let index = 1; index < scopes.length; index += 1) {
     if (scopes[index]?.has(name)) {
       return true;
@@ -567,30 +569,18 @@ function isShadowed(name: string, scopes: Array<Set<string>>): boolean {
   return false;
 }
 
-function getFunctionInfo(
-  fn: AstNode,
-  code: string,
-  id: string,
-):
-  | {
-      valid: true;
-      body: string;
-      bodyNode: AstNode;
-      bodyPrefixLength: number;
-      bodySourceOffset: number;
-    }
-  | { valid: false } {
+function getFunctionInfo(fn: AstNode, code: string, id: string) {
   if (fn.type !== "ArrowFunctionExpression" && fn.type !== "FunctionExpression") {
-    return { valid: false };
+    return { valid: false as const };
   }
 
   if (readArray(fn, "params").length !== 0) {
-    return { valid: false };
+    return { valid: false as const };
   }
 
   const bodyNode = readNode(fn, "body");
   if (!bodyNode) {
-    return { valid: false };
+    return { valid: false as const };
   }
 
   const start = readOffset(bodyNode, "start");
@@ -606,7 +596,7 @@ function getFunctionInfo(
 
   if (bodyNode.type === "BlockStatement") {
     return {
-      valid: true,
+      valid: true as const,
       body: code.slice(start + 1, end - 1),
       bodyNode,
       bodyPrefixLength: 0,
@@ -615,7 +605,7 @@ function getFunctionInfo(
   }
 
   return {
-    valid: true,
+    valid: true as const,
     body: `return ${code.slice(start, end)};`,
     bodyNode,
     bodyPrefixLength: "return ".length,
@@ -633,7 +623,7 @@ async function resolveDynamicImports(
   code: string,
   id: string,
   context: TransformContext | undefined,
-): Promise<string> {
+) {
   if (!context?.resolve) {
     return fnInfo.body;
   }
@@ -663,7 +653,7 @@ type DynamicImport = {
 function collectDynamicImports(
   root: AstNode,
   fnInfo: { bodyPrefixLength: number; bodySourceOffset: number },
-): DynamicImport[] {
+) {
   const imports: DynamicImport[] = [];
   visitChildren(root, (child) => collectDynamicImportsFromNode(child, fnInfo, imports));
   return imports;
@@ -673,7 +663,7 @@ function collectDynamicImportsFromNode(
   value: unknown,
   fnInfo: { bodyPrefixLength: number; bodySourceOffset: number },
   imports: DynamicImport[],
-): void {
+) {
   if (!isAstNode(value)) {
     return;
   }
@@ -697,7 +687,7 @@ function collectDynamicImportsFromNode(
   visitChildren(value, (child) => collectDynamicImportsFromNode(child, fnInfo, imports));
 }
 
-function createVirtualModule(imports: string[], declarations: string[], body: string): string {
+function createVirtualModule(imports: string[], declarations: string[], body: string) {
   const parts: string[] = [];
   parts.push(...imports);
   parts.push(...declarations);
@@ -709,7 +699,7 @@ function createVirtualModule(imports: string[], declarations: string[], body: st
   return `${parts.join("\n")}\n`;
 }
 
-function createVirtualResultName(parts: string[], body: string): string {
+function createVirtualResultName(parts: string[], body: string) {
   const source = `${parts.join("\n")}\n${body}`;
   let name = "__comptime_result";
   while (source.includes(name)) {
@@ -718,16 +708,16 @@ function createVirtualResultName(parts: string[], body: string): string {
   return name;
 }
 
-function createVirtualId(id: string, index: number): string {
+function createVirtualId(id: string, index: number) {
   return `${EVALUATION_VIRTUAL_PREFIX}${stripQuery(id)}${EVALUATION_INDEX_MARKER}${index}`;
 }
 
-export function toDevID(originId: string, virtualId: string): string {
+export function toDevID(originId: string, virtualId: string) {
   const index = readVirtualIndex(virtualId);
   return `${stripQuery(originId)}${EVALUATION_INDEX_MARKER}${index}`;
 }
 
-function readVirtualIndex(virtualId: string): number {
+function readVirtualIndex(virtualId: string) {
   const marker = virtualId.lastIndexOf(EVALUATION_INDEX_MARKER);
   if (marker === -1) {
     throw new Error(`Invalid comptime virtual id: ${virtualId}`);
@@ -740,10 +730,7 @@ function readVirtualIndex(virtualId: string): number {
   return index;
 }
 
-function createImportStatements(
-  imports: Map<string, ImportBinding>,
-  refs: Set<string>,
-): { statements: string[]; watchFiles: string[] } {
+function createImportStatements(imports: Map<string, ImportBinding>, refs: Set<string>) {
   const statements: string[] = [];
   const watchFiles: string[] = [];
   const seen = new Set<string>();
@@ -763,7 +750,7 @@ function createImportStatements(
   return { statements, watchFiles };
 }
 
-function collectTopLevelDeclarations(program: unknown, code: string): Declaration[] {
+function collectTopLevelDeclarations(program: unknown, code: string) {
   if (!isAstNode(program)) {
     return [];
   }
@@ -799,7 +786,7 @@ function createDeclarationStatements(
   initialRefs: Set<string>,
   callStart: number,
   callEnd: number,
-): string[] {
+) {
   const needed = new Set(initialRefs);
   const included = new Set<Declaration>();
   let changed = true;
@@ -826,11 +813,11 @@ function createDeclarationStatements(
     .map((declaration) => declaration.source);
 }
 
-function overlaps(declaration: Declaration, start: number, end: number): boolean {
+function overlaps(declaration: Declaration, start: number, end: number) {
   return declaration.start <= start && declaration.end >= end;
 }
 
-function setsIntersect(left: Set<string>, right: Set<string>): boolean {
+function setsIntersect(left: Set<string>, right: Set<string>) {
   for (const item of left) {
     if (right.has(item)) {
       return true;
@@ -839,14 +826,14 @@ function setsIntersect(left: Set<string>, right: Set<string>): boolean {
   return false;
 }
 
-function collectIdentifierReferences(root: unknown): Set<string> {
+function collectIdentifierReferences(root: unknown) {
   const refs = new Set<string>();
   const scopes: Array<Set<string>> = [new Set()];
   visitForReferences(root, scopes, refs);
   return refs;
 }
 
-function visitForReferences(value: unknown, scopes: Array<Set<string>>, refs: Set<string>): void {
+function visitForReferences(value: unknown, scopes: Array<Set<string>>, refs: Set<string>) {
   if (!isAstNode(value) || value.type.startsWith("TS")) {
     return;
   }
@@ -921,7 +908,7 @@ function visitForReferences(value: unknown, scopes: Array<Set<string>>, refs: Se
   visitChildren(value, (child) => visitForReferences(child, scopes, refs));
 }
 
-function collectDeclarationsInContainer(node: AstNode): Set<string> {
+function collectDeclarationsInContainer(node: AstNode) {
   const names = new Set<string>();
   const body = readArray(node, "body");
   for (const item of body) {
@@ -935,7 +922,7 @@ function collectDeclarationsInContainer(node: AstNode): Set<string> {
   return names;
 }
 
-function collectStatementBindings(node: AstNode): Set<string> {
+function collectStatementBindings(node: AstNode) {
   const names = new Set<string>();
 
   if (node.type === "VariableDeclaration") {
@@ -962,7 +949,7 @@ function collectStatementBindings(node: AstNode): Set<string> {
   return names;
 }
 
-function collectFunctionScope(node: AstNode): Set<string> {
+function collectFunctionScope(node: AstNode) {
   const names = new Set<string>();
   for (const param of readArray(node, "params")) {
     collectPatternBindings(param, names);
@@ -976,7 +963,7 @@ function collectFunctionScope(node: AstNode): Set<string> {
   return names;
 }
 
-function collectPatternBindings(value: unknown, names: Set<string>): void {
+function collectPatternBindings(value: unknown, names: Set<string>) {
   if (!isAstNode(value)) {
     return;
   }
@@ -1002,7 +989,7 @@ function collectPatternBindings(value: unknown, names: Set<string>): void {
   visitChildren(value, (child) => collectPatternBindings(child, names));
 }
 
-function isDeclared(name: string, scopes: Array<Set<string>>): boolean {
+function isDeclared(name: string, scopes: Array<Set<string>>) {
   for (const scope of scopes) {
     if (scope.has(name)) {
       return true;
@@ -1011,13 +998,13 @@ function isDeclared(name: string, scopes: Array<Set<string>>): boolean {
   return false;
 }
 
-function collectEnvReads(root: unknown): EnvReads {
+function collectEnvReads(root: unknown) {
   const reads: EnvReads = { keys: new Set(), dynamic: false };
   visitForEnv(root, reads);
   return reads;
 }
 
-function visitForEnv(value: unknown, reads: EnvReads): void {
+function visitForEnv(value: unknown, reads: EnvReads) {
   if (!isAstNode(value) || value.type.startsWith("TS")) {
     return;
   }
@@ -1039,7 +1026,7 @@ function visitForEnv(value: unknown, reads: EnvReads): void {
   visitChildren(value, (child) => visitForEnv(child, reads));
 }
 
-function isProcessEnv(value: unknown): boolean {
+function isProcessEnv(value: unknown) {
   if (!isAstNode(value)) {
     return false;
   }
@@ -1051,7 +1038,7 @@ function isProcessEnv(value: unknown): boolean {
   return readIdentifierName(object) === "process" && readIdentifierName(property) === "env";
 }
 
-function readEnvKey(member: AstNode, property: AstNode | undefined): string | undefined {
+function readEnvKey(member: AstNode, property: AstNode | undefined) {
   if (!property) {
     return undefined;
   }
@@ -1071,7 +1058,7 @@ function enforceEnvPolicy(
   code: string,
   id: string,
   start: number,
-): void {
+) {
   if (options.env === "all") {
     return;
   }
@@ -1101,7 +1088,7 @@ function enforceEnvPolicy(
   }
 }
 
-function createCacheKey(moduleBody: string, reads: EnvReads): string {
+function createCacheKey(moduleBody: string, reads: EnvReads) {
   const hash = createHash("sha256");
   hash.update(moduleBody);
   hash.update("\0env\0");
@@ -1119,7 +1106,7 @@ function createCacheKey(moduleBody: string, reads: EnvReads): string {
   return hash.digest("hex");
 }
 
-function serializeValue(value: unknown, options: NormalizedOptions): string {
+function serializeValue(value: unknown, options: NormalizedOptions) {
   for (const serializer of options.serializers) {
     if (serializer.test(value)) {
       return serializer.serialize(value);
@@ -1128,7 +1115,7 @@ function serializeValue(value: unknown, options: NormalizedOptions): string {
   return uneval(value);
 }
 
-async function withTimeout<T>(promise: Promise<T>, timeout: number): Promise<T> {
+async function withTimeout<T>(promise: Promise<T>, timeout: number) {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeoutPromise = new Promise<never>((_resolve, reject) => {
     timer = setTimeout(() => {
@@ -1147,14 +1134,14 @@ async function withTimeout<T>(promise: Promise<T>, timeout: number): Promise<T> 
   }
 }
 
-function messageFrom(error: unknown): string {
+function messageFrom(error: unknown) {
   if (error instanceof Error) {
     return error.message;
   }
   return String(error);
 }
 
-function locate(code: string, file: string, start: number): SourceLocation {
+function locate(code: string, file: string, start: number) {
   let line = 1;
   let column = 0;
   for (let index = 0; index < start; index += 1) {
@@ -1168,13 +1155,13 @@ function locate(code: string, file: string, start: number): SourceLocation {
   return { file, line, column };
 }
 
-function createFrame(code: string, line: number, column: number): string {
+function createFrame(code: string, line: number, column: number) {
   const lines = code.split("\n");
   const source = lines[line - 1] ?? "";
   return `${line} | ${source}\n${" ".repeat(String(line).length + 3 + column)}^`;
 }
 
-function visitChildren(node: AstNode, visit: (child: unknown) => void): void {
+function visitChildren(node: AstNode, visit: (child: unknown) => void) {
   const keys = Object.keys(node);
   for (const key of keys) {
     if (SKIPPED_CHILD_KEYS.has(key) || key === "type" || key === "start" || key === "end") {
@@ -1191,12 +1178,12 @@ function visitChildren(node: AstNode, visit: (child: unknown) => void): void {
   }
 }
 
-function readArray(node: AstNode, key: string): unknown[] {
+function readArray(node: AstNode, key: string) {
   const value = node[key];
   return Array.isArray(value) ? value : [];
 }
 
-function readNode(node: AstNode | undefined, key: string): AstNode | undefined {
+function readNode(node: AstNode | undefined, key: string) {
   if (!node) {
     return undefined;
   }
@@ -1204,7 +1191,7 @@ function readNode(node: AstNode | undefined, key: string): AstNode | undefined {
   return isAstNode(value) ? value : undefined;
 }
 
-function readIdentifierName(node: unknown): string | undefined {
+function readIdentifierName(node: unknown) {
   if (!isAstNode(node) || node.type !== "Identifier") {
     return undefined;
   }
@@ -1212,7 +1199,7 @@ function readIdentifierName(node: unknown): string | undefined {
   return typeof name === "string" ? name : undefined;
 }
 
-function readOffset(node: AstNode, key: "start" | "end"): number | undefined {
+function readOffset(node: AstNode, key: "start" | "end") {
   const value = node[key];
   return typeof value === "number" ? value : undefined;
 }
@@ -1225,7 +1212,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function stripQuery(id: string): string {
+function stripQuery(id: string) {
   const index = id.indexOf("?");
   return index === -1 ? id : id.slice(0, index);
 }

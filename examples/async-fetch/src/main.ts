@@ -13,7 +13,7 @@ const payload = comptime<Payload>(async () => {
   const value: unknown = await response.json();
   return readPayload(value);
 
-  function readPayload(input: unknown): Payload {
+  function readPayload(input: unknown) {
     if (!isRecord(input) || typeof input.source !== "string" || !Array.isArray(input.values)) {
       throw new Error("Unexpected payload shape");
     }

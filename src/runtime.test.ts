@@ -9,7 +9,7 @@ describe.concurrent("runtime stub", () => {
   test("is typed as an identity helper", () => {
     // eslint-disable-next-line
     if (false) {
-      const value: "hi" = comptime((): "hi" => "hi");
+      const value: "hi" = comptime(() => "hi");
       expect(value).toBe("hi");
     }
   });
@@ -17,7 +17,7 @@ describe.concurrent("runtime stub", () => {
   test("awaits promise-returning bodies in the type signature", () => {
     // eslint-disable-next-line
     if (false) {
-      const value: "hi" = comptime(async (): Promise<"hi"> => "hi");
+      const value: "hi" = comptime(async () => "hi" as const);
       expect(value).toBe("hi");
     }
   });

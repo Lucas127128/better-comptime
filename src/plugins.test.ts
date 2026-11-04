@@ -75,7 +75,7 @@ describe.concurrent("plugin adapters", () => {
         write: false,
       },
     });
-    const code = collectCode(output);
+    const code = collectCode(assertBuildOutput(output));
 
     expect(code).toContain("55");
     expect(code).not.toContain("comptime(");
@@ -167,16 +167,12 @@ describe.concurrent("plugin adapters", () => {
     const entry = writeDynamicDependencyFixture(root, "one");
     const dependency = resolve(root, "src/article.ts");
     const source = readFileSync(entry, "utf8");
-    let evaluator: ModuleRunnerEvaluator | undefined;
-    const core = createCore({
-      getEvaluator() {
-        if (!evaluator) {
-          throw new Error("fixture evaluator was used before initialization");
-        }
-        return evaluator;
-      },
-    });
-    evaluator = new ModuleRunnerEvaluator({ core, cwd: root });
+    const core = createCore({ getEvaluator });
+    const evaluator = new ModuleRunnerEvaluator({ core, cwd: root });
+
+    function getEvaluator() {
+      return evaluator;
+    }
 
     try {
       const first = await core.transform(source, entry);
@@ -332,7 +328,7 @@ describe.concurrent("plugin adapters", () => {
         write: false,
       },
     });
-    const code = collectCode(output);
+    const code = collectCode(assertBuildOutput(output));
 
     expect(code).toContain("55");
     expect(code).not.toContain("dynamic-comptime-value");
@@ -355,7 +351,7 @@ describe.concurrent("plugin adapters", () => {
         write: false,
       },
     });
-    const code = collectCode(output);
+    const code = collectCode(assertBuildOutput(output));
 
     expect(code).toContain("55");
     expect(code).not.toContain("dynamic-relative-value");
@@ -378,7 +374,7 @@ describe.concurrent("plugin adapters", () => {
         write: false,
       },
     });
-    const code = collectCode(output);
+    const code = collectCode(assertBuildOutput(output));
 
     expect(code).toContain("55");
     expect(code).not.toContain("named-render-package");
@@ -401,20 +397,20 @@ describe.concurrent("plugin adapters", () => {
         write: false,
       },
     });
-    const code = collectCode(output);
+    const code = collectCode(assertBuildOutput(output));
 
     expect(code).toContain("<span>ready</span>");
     expect(code).not.toContain("fixture-jsx");
   });
 });
 
-function createFixture(name: string): string {
+function createFixture(name: string) {
   const root = realpathSync(mkdtempSync(resolve(tmpdir(), `comptime-${name}-`)));
   mkdirSync(resolve(root, "src"));
   return root;
 }
 
-function writeFixture(root: string): string {
+function writeFixture(root: string) {
   const entry = resolve(root, "src/app.ts");
   writeFileSync(
     resolve(root, "src/math.ts"),
@@ -431,7 +427,7 @@ function writeFixture(root: string): string {
   return entry;
 }
 
-function writeVariableFixture(root: string, input: number): string {
+function writeVariableFixture(root: string, input: number) {
   const entry = resolve(root, "src/app.ts");
   writeFileSync(
     resolve(root, "src/math.ts"),
@@ -450,7 +446,7 @@ function writeVariableFixture(root: string, input: number): string {
   return entry;
 }
 
-function writeDynamicImportFixture(root: string): string {
+function writeDynamicImportFixture(root: string) {
   const entry = resolve(root, "src/app.ts");
   const packageRoot = resolve(root, "node_modules/dynamic-comptime-value");
   mkdirSync(packageRoot, { recursive: true });
@@ -477,7 +473,7 @@ function writeDynamicImportFixture(root: string): string {
   return entry;
 }
 
-function writeDynamicRelativeImportFixture(root: string): string {
+function writeDynamicRelativeImportFixture(root: string) {
   const entry = resolve(root, "src/app.ts");
   writeFileSync(
     resolve(root, "src/value.ts"),
@@ -496,7 +492,7 @@ function writeDynamicRelativeImportFixture(root: string): string {
   return entry;
 }
 
-function writeDynamicDependencyFixture(root: string, value: string): string {
+function writeDynamicDependencyFixture(root: string, value: string) {
   const entry = resolve(root, "src/app.ts");
   writeFileSync(
     resolve(root, "src/article.ts"),
@@ -515,7 +511,7 @@ function writeDynamicDependencyFixture(root: string, value: string): string {
   return entry;
 }
 
-function writeDynamicNamedImportFixture(root: string): string {
+function writeDynamicNamedImportFixture(root: string) {
   const entry = resolve(root, "src/app.ts");
   const packageRoot = resolve(root, "node_modules/named-render-package");
   mkdirSync(packageRoot, { recursive: true });
@@ -559,7 +555,7 @@ function writeDynamicNamedImportFixture(root: string): string {
   return entry;
 }
 
-function writeTsxBodyFixture(root: string): string {
+function writeTsxBodyFixture(root: string) {
   const entry = resolve(root, "src/app.tsx");
   const packageRoot = resolve(root, "node_modules/fixture-jsx");
   mkdirSync(packageRoot, { recursive: true });
@@ -607,7 +603,7 @@ function writeTsxBodyFixture(root: string): string {
   return entry;
 }
 
-function writeAsyncFixture(root: string): string {
+function writeAsyncFixture(root: string) {
   const entry = resolve(root, "src/app.ts");
   writeFileSync(
     entry,
@@ -621,7 +617,7 @@ function writeAsyncFixture(root: string): string {
   return entry;
 }
 
-function writeTypedAsyncFixture(root: string): string {
+function writeTypedAsyncFixture(root: string) {
   const entry = resolve(root, "src/app.ts");
   writeFileSync(
     entry,
@@ -637,7 +633,7 @@ function writeTypedAsyncFixture(root: string): string {
   return entry;
 }
 
-function writeThrowingFixture(root: string): string {
+function writeThrowingFixture(root: string) {
   const entry = resolve(root, "src/app.ts");
   writeFileSync(
     entry,
@@ -652,27 +648,32 @@ function writeThrowingFixture(root: string): string {
   return entry;
 }
 
-function collectCode(value: unknown): string {
-  if (Array.isArray(value)) {
-    return value.map((item) => collectCode(item)).join("\n");
+function assertBuildOutput(
+  value: Awaited<ReturnType<typeof build>>,
+): { output: { type: "chunk"; code: "string" }[] }[] {
+  if (!Array.isArray(value)) {
+    throw new Error("expected build to return an array of outputs");
   }
-  if (!isRecord(value)) {
-    return "";
-  }
-  const output = value.output;
-  if (!Array.isArray(output)) {
-    return "";
-  }
-  return output
-    .map((chunk) => {
-      if (!isRecord(chunk) || chunk.type !== "chunk" || typeof chunk.code !== "string") {
-        return "";
+
+  for (const result of value) {
+    for (const item of result.output) {
+      if (item.type !== "chunk" || typeof item.code !== "string") {
+        throw new Error("expected build output to contain only chunks");
       }
-      return chunk.code;
-    })
-    .join("\n");
+    }
+  }
+
+  return value as { output: { type: "chunk"; code: "string" }[] }[];
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
+function collectCode(value: { output: { type: "chunk"; code: "string" }[] }[]) {
+  const items = [...value];
+
+  return items
+    .map(({ output }) =>
+      output.map((chunk) => {
+        return chunk.code;
+      }),
+    )
+    .join("\n");
 }

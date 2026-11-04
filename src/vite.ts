@@ -21,7 +21,7 @@ class ViteEvaluator implements Evaluator {
     this.#getServer = () => options.getServer();
   }
 
-  async evaluate(virtualId: string, origin: string): Promise<unknown> {
+  async evaluate(virtualId: string, origin: string) {
     const server = this.#getServer();
     if (server) {
       invalidateVirtualModule(server, virtualId);
@@ -43,26 +43,26 @@ class ViteEvaluator implements Evaluator {
     return await this.#fallback.evaluate(virtualId);
   }
 
-  setHost(host: EvaluatorHost | undefined): void {
+  setHost(host: EvaluatorHost | undefined) {
     this.#fallback.setHost(host);
   }
 
-  dispose(): Promise<void> {
+  dispose() {
     return this.#fallback.dispose();
   }
 }
 
-export function comptime(options?: Options): Plugin {
+export function comptime(options?: Options) {
   let server: ViteDevServer | undefined;
   let evaluator: ViteEvaluator | undefined;
   const core = createCore({ getEvaluator, options });
 
-  function getEvaluator(): Evaluator {
+  function getEvaluator() {
     if (evaluator) return evaluator;
     throw new Error("comptime evaluator was used before configResolved");
   }
 
-  return {
+  const plugin: Plugin = {
     name: "comptime",
     enforce: "pre",
     configResolved(config) {
@@ -132,9 +132,11 @@ export function comptime(options?: Options): Plugin {
       await evaluator?.dispose();
     },
   };
+
+  return plugin;
 }
 
-function invalidateVirtualModule(server: ViteDevServer, id: string): void {
+function invalidateVirtualModule(server: ViteDevServer, id: string) {
   const module = server.moduleGraph.getModuleById(id);
   if (module) {
     server.moduleGraph.invalidateModule(module);
