@@ -383,9 +383,7 @@ export function comptime(options?: ComptimeOptions): Plugin {
     // Rolldown supports `enforce: 'pre'` via the same Rollup-shaped API.
 
     buildStart() {
-      evaluator = new RolldownEvaluator({
-        /* ... */
-      });
+      evaluator = new RolldownEvaluator({/* ... */});
     },
 
     resolveId(id) {
