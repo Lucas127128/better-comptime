@@ -9,7 +9,9 @@
     "typescript/await-thenable": "error",
     "typescript/consistent-return": "error",
     "prefer-const": "error",
-    "no-unused-vars": "error"
+    "no-unused-vars": "error",
+    "typescript/no-unnecessary-type-assertion": "error",
+    "typescript/no-unnecessary-type-constraint": "error",
   },
   "env": {
     "builtin": true

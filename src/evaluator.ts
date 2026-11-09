@@ -8,7 +8,7 @@ import { moduleRunnerTransform } from "rolldown/experimental";
 import { ESModulesEvaluator, ModuleRunner } from "vite/module-runner";
 
 import type { ComptimeCore, Evaluator } from "./shared";
-import type { EvaluatedModuleNode } from "vite/module-runner";
+import type { EvaluatedModuleNode, FetchFunction } from "vite/module-runner";
 
 const RESOLUTION_EXTENSIONS = [".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"];
 const EVALUATION_VIRTUAL_PREFIX = "\0comptime:";
@@ -38,6 +38,11 @@ type SerializableError = {
 type LoadedModule = {
   id: string;
   code: string;
+};
+
+type InvokeRequest = {
+  name: string;
+  data: Parameters<FetchFunction>;
 };
 
 export class ModuleRunnerEvaluator implements Evaluator {
@@ -73,7 +78,7 @@ export class ModuleRunnerEvaluator implements Evaluator {
 
   async evaluate(virtualId: string) {
     this.#invalidate(virtualId);
-    const module = await this.#runner.import(virtualId);
+    const module = await this.#runner.import<Record<string, unknown>>(virtualId);
     return readDefaultExport(module);
   }
 
@@ -94,14 +99,10 @@ export class ModuleRunnerEvaluator implements Evaluator {
     throw new Error(`Unsupported ModuleRunner invoke: ${request.name}`);
   }
 
-  async #fetchModule(args: unknown[]) {
-    const id = typeof args[0] === "string" ? args[0] : undefined;
-    const importer = typeof args[1] === "string" ? args[1] : undefined;
-    const cached = isRecord(args[2]) && args[2].cached === true;
+  async #fetchModule(args: Parameters<FetchFunction>) {
+    const [id, importer, options] = args;
+    const cached = options?.cached === true;
 
-    if (id === undefined) {
-      throw new Error("ModuleRunner fetchModule expected a string id");
-    }
     if (cached) {
       return { cache: true };
     }
@@ -207,8 +208,8 @@ export class ModuleRunnerEvaluator implements Evaluator {
   }
 }
 
-export function readDefaultExport(module: unknown) {
-  if (!isRecord(module) || !("default" in module)) {
+export function readDefaultExport(module: Record<string, unknown>) {
+  if (!("default" in module)) {
     throw new Error("comptime virtual module did not export a default value");
   }
   return module.default;
@@ -242,20 +243,20 @@ function createTransformFilename(id: string, cwd: string) {
   return id.startsWith("\0") ? resolve(cwd, `${sanitizeVirtualId(id)}.ts`) : id;
 }
 
-function parseInvokeRequest(payload: unknown) {
-  if (!isRecord(payload)) {
+function parseInvokeRequest(payload: unknown): InvokeRequest {
+  if (typeof payload !== "object" || payload === null || !("data" in payload)) {
     throw new Error("ModuleRunner invoke payload must be an object");
   }
   const data = payload.data;
-  if (!isRecord(data)) {
+  if (typeof data !== "object" || data === null || !("name" in data)) {
     throw new Error("ModuleRunner invoke payload is missing data");
   }
   const name = data.name;
   if (typeof name !== "string") {
     throw new Error("ModuleRunner invoke payload is missing a name");
   }
-  const args = data.data;
-  return { name, data: Array.isArray(args) ? args : [] };
+  const args = "data" in data && Array.isArray(data.data) ? data.data : [];
+  return { name, data: args as Parameters<FetchFunction> };
 }
 
 function resolveExistingPath(path: string) {
@@ -370,8 +371,4 @@ function serializeError(error: unknown) {
     return serialized;
   }
   return { message: String(error) };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value != null;
 }

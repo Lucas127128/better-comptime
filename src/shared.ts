@@ -92,16 +92,15 @@ type ErrorInput = {
 
 export class ComptimeTransformError extends Error {
   readonly id: string;
-  readonly loc: SourceLocation;
   readonly frame: string;
   override readonly cause?: unknown;
 
   constructor(input: ErrorInput) {
     super(input.message);
+    const { line, column } = locate(input.code, input.start);
     this.name = "ComptimeTransformError";
     this.id = input.id;
-    this.loc = locate(input.code, input.id, input.start);
-    this.frame = createFrame(input.code, this.loc.line, this.loc.column);
+    this.frame = createFrame(input.code, line, column);
     this.cause = input.cause;
     if (
       input.cause instanceof Error &&
@@ -356,28 +355,19 @@ function normalizePatterns(value: string | string[] | undefined) {
 }
 
 function shouldScan(id: string, code: string, options: NormalizedOptions) {
-  if (id.startsWith(EVALUATION_VIRTUAL_PREFIX) || id.includes(EVALUATION_INDEX_MARKER)) {
-    return false;
-  }
-
-  if (!code.includes(PACKAGE_NAME)) {
-    return false;
-  }
-
   const cleanId = stripQuery(id);
-  if (!SUPPORTED_EXTENSIONS.has(extname(cleanId))) {
+  if (
+    id.startsWith(EVALUATION_VIRTUAL_PREFIX) ||
+    id.includes(EVALUATION_INDEX_MARKER) ||
+    !code.includes(PACKAGE_NAME) ||
+    !SUPPORTED_EXTENSIONS.has(extname(cleanId)) ||
+    (options.include && !matchesAny(cleanId, options.include)) ||
+    (options.exclude && matchesAny(cleanId, options.exclude))
+  ) {
     return false;
+  } else {
+    return true;
   }
-
-  if (options.include && !matchesAny(cleanId, options.include)) {
-    return false;
-  }
-
-  if (options.exclude && matchesAny(cleanId, options.exclude)) {
-    return false;
-  }
-
-  return true;
 }
 
 function matchesAny(value: string, patterns: string[]) {
@@ -1141,7 +1131,7 @@ function messageFrom(error: unknown) {
   return String(error);
 }
 
-function locate(code: string, file: string, start: number) {
+function locate(code: string, start: number) {
   let line = 1;
   let column = 0;
   for (let index = 0; index < start; index += 1) {
@@ -1152,7 +1142,7 @@ function locate(code: string, file: string, start: number) {
       column += 1;
     }
   }
-  return { file, line, column };
+  return { line, column };
 }
 
 function createFrame(code: string, line: number, column: number) {
@@ -1205,11 +1195,9 @@ function readOffset(node: AstNode, key: "start" | "end") {
 }
 
 function isAstNode(value: unknown): value is AstNode {
-  return isRecord(value) && typeof value.type === "string";
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
+  return (
+    typeof value === "object" && value !== null && "type" in value && typeof value.type === "string"
+  );
 }
 
 function stripQuery(id: string) {

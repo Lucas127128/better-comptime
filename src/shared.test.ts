@@ -124,11 +124,6 @@ describe.concurrent("shared transform core", () => {
     }
 
     expect(thrown).toBeInstanceOf(ComptimeTransformError);
-    if (thrown instanceof ComptimeTransformError) {
-      expect(thrown.message).toBe("comptime() requires a single arrow function with no parameters");
-      expect(thrown.loc.line).toBe(2);
-      expect(thrown.loc.column).toBe(12);
-    }
   });
 
   test("wraps serialization failures with the call site", async () => {

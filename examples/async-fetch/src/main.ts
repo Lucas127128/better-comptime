@@ -6,6 +6,11 @@ type Payload = {
   total: number;
 };
 
+type PayloadInput = {
+  source?: unknown;
+  values?: unknown;
+};
+
 const payload = comptime<Payload>(async () => {
   const response = await fetch(
     "data:application/json,%7B%22source%22%3A%22data-url%22%2C%22values%22%3A%5B3%2C5%2C8%2C13%5D%7D",
@@ -14,20 +19,21 @@ const payload = comptime<Payload>(async () => {
   return readPayload(value);
 
   function readPayload(input: unknown) {
-    if (!isRecord(input) || typeof input.source !== "string" || !Array.isArray(input.values)) {
+    if (typeof input !== "object" || input === null) {
       throw new Error("Unexpected payload shape");
     }
 
-    const values = input.values.filter((item) => typeof item === "number");
-    return {
-      source: input.source,
-      values,
-      total: values.reduce((sum, item) => sum + item, 0),
-    };
-  }
+    const { source, values } = input as PayloadInput;
+    if (typeof source !== "string" || !Array.isArray(values)) {
+      throw new Error("Unexpected payload shape");
+    }
 
-  function isRecord(input: unknown): input is Record<string, unknown> {
-    return typeof input === "object" && input !== null;
+    const numbers = values.filter((item) => typeof item === "number");
+    return {
+      source,
+      values: numbers,
+      total: numbers.reduce((sum, item) => sum + item, 0),
+    };
   }
 });
 
